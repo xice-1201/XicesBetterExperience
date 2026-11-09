@@ -98,3 +98,7 @@ build.ps1       构建脚本
 ## 问题反馈
 
 请通过 [GitHub Issues](https://github.com/xice-1201/XicesBetterExperience/issues) 提交问题，附上游戏版本、模组版本、相关配置、复现步骤，以及预期与实际表现。界面问题请附截图；加载失败请附完整拒绝信息，运行异常请附相关游戏日志。
+
+## 许可证
+
+本项目采用 [MIT License](LICENSE)。许可证适用于本仓库代码；游戏本体及其程序集的权利归各自权利人所有。
