@@ -10,7 +10,7 @@ namespace XicesBetterExperience
 
         public static bool Prefix(GameItem __0)
         {
-            if (submitting || !ModEntry.IsEnabled || ExperienceSettings.AppraisalAutomation == 0) return true;
+            if (submitting || !ModEntry.IsEnabled || ExperienceSettings.AppraisalAutomationFor(__0) == 0) return true;
             int value;
             try
             {
@@ -43,7 +43,7 @@ namespace XicesBetterExperience
             var client = PlayerStore.Instance.currentClientInstance;
             var blueprint = client == null ? null : client.GetClientBlueprint();
             if (blueprint == null || blueprint.clientIntent != StoreClient.ClientIntent.APPRAISAL_SERVICE) return false;
-            int requiredRank = ExperienceSettings.AppraisalAutomation - 1;
+            int requiredRank = ExperienceSettings.AppraisalAutomationFor(item) - 1;
             if (!PlayerStore.Instance.isAppraisalIntroduced || AppraisalRankHelper.GetRank() < requiredRank) return false;
             foreach (GameItem certificate in PlayerStore.Instance.FindAllItem(true))
             {
@@ -60,38 +60,43 @@ namespace XicesBetterExperience
     [HarmonyPatch(typeof(ModConfigWindow), "BuildEntry")]
     public static class AppraisalAutomationSlider
     {
-        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<CustomUIElement, CustomUIElement> labels =
-            new System.Runtime.CompilerServices.ConditionalWeakTable<CustomUIElement, CustomUIElement>();
+        private sealed class Selection { public CustomUIElement Label; public string Key; }
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<CustomUIElement, Selection> labels =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<CustomUIElement, Selection>();
         public static void Postfix(CustomUIBuilder b, ModConfig config, ConfigEntry entry)
         {
-            if (config.ModId != ModEntry.ModId || entry.Key != "appraisal_automation") return;
+            if (config.ModId != ModEntry.ModId || !ExperienceSettings.IsAutomationSetting(entry.Key)) return;
             AddExtras(b, config, entry);
         }
 
         internal static void AddExtras(CustomUIBuilder b, ModConfig config, ConfigEntry entry)
         {
-            if (config.ModId != ModEntry.ModId || entry.Key != "appraisal_automation") return;
-            b.BeginRow();
-            b.AddLabel(ModHelper.GetLocalized(ModEntry.ModId, "automation_scale"));
-            b.End();
+            if (config.ModId != ModEntry.ModId || !ExperienceSettings.IsAutomationSetting(entry.Key)) return;
             b.BeginRow();
             b.AddLabel(ModHelper.GetLocalized(ModEntry.ModId, "automation_selected"));
-            b.AddLabel(LevelName(Convert.ToInt32(entry.BoxedValue)));
+            b.AddLabel(SelectionName(entry.Key, Convert.ToInt32(entry.BoxedValue)));
             CustomUIElement selected = b.Last;
             b.End();
             CustomUIElement slider = b.Handle.Get(entry.Key);
             if (slider != null)
             {
-                labels.Remove(slider); labels.Add(slider, selected);
+                labels.Remove(slider); labels.Add(slider, new Selection { Label = selected, Key = entry.Key });
                 slider.OnSlider(value => UpdateLabel(slider, value));
             }
         }
 
         internal static void UpdateLabel(CustomUIElement slider, float value)
         {
-            CustomUIElement selected;
-            if (labels.TryGetValue(slider, out selected) && selected.IsAlive)
-                selected.SetText(LevelName((int)Math.Round(value)));
+            Selection selected;
+            if (labels.TryGetValue(slider, out selected) && selected.Label.IsAlive)
+                selected.Label.SetText(SelectionName(selected.Key, (int)Math.Round(value)));
+        }
+
+        internal static string SelectionName(string key, int index)
+        {
+            if (key == "injector_inspection_automation")
+                return ModHelper.GetLocalized(ModEntry.ModId, "injector_automation_level_" + Math.Max(0, Math.Min(2, index)));
+            return LevelName(ExperienceSettings.AutomationLevel(key, index));
         }
 
         internal static string LevelName(int value)

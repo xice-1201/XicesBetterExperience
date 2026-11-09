@@ -1,13 +1,11 @@
-config_tab_general,General
+﻿config_tab_general,General
 config_tab_icons,Icons
 setting_power_warning,Power warning
 setting_power_warning_tip,Show a warning on the item icon when the tool or machine has insufficient power to continue operating tonight.
 setting_auto_open_guide,Automatically open and close appraisal guides
 setting_auto_open_guide_tip,Automatically open an owned appraisal guide during appraisal and close it when appraisal ends.
 setting_storage_naming,Storage naming
-setting_appraisal_automation,Appraisal automation
 setting_appraisal_automation_tip,Automatically perform perfect appraisals after reaching the corresponding appraiser rank.
-automation_scale,Off → Junior → Intermediate → Senior → Expert
 automation_selected,Selected:
 automation_level_0,Off
 automation_level_1,Junior
@@ -15,6 +13,8 @@ automation_level_2,Intermediate
 automation_level_3,Senior
 automation_level_4,Expert
 setting_retain_document_page,Remember document pages
+setting_retain_window_layout,Remember subwindow layout
+setting_retain_window_layout_tip,Remember the position and size of game subwindows.
 setting_retain_document_page_tip,Return to the last viewed page when reopening a multi-page guide.
 setting_storage_naming_tip,Show names assigned with the blue label printer on storage bay icons.
 setting_stolen_marker,Stolen item marker
@@ -27,6 +27,22 @@ single_cell_value_line, Single-cell value: {0}
 setting_auto_discard_receipt,Automatically discard appraisal receipts
 setting_auto_discard_receipt_tip,Automatically discard appraisal slips and market intelligence in the trash.
 setting_market_change_marker,Show market changes
+setting_overflow_warning,Overflow warning
+setting_overflow_warning_tip,Show a warning on the item icon when its tool or machine is close to overflowing.
 setting_market_change_marker_tip,Show market value changes affecting the item's types on its icon.
 setting_exchange_auto_pickup_tip,Automatically place goods received from underground trades on the counter.
 setting_exchange_auto_pickup,Underground trade auto pickup
+config_tab_automation,Automation
+setting_appraisal_automation_hand,Bionic hand appraisal automation
+setting_appraisal_automation_ribwich,Ribwich appraisal automation
+setting_appraisal_automation_plasma,Plasma fuel cartridge appraisal automation
+setting_storage_capacity,Storage capacity usage
+setting_storage_capacity_tip,Show capacity usage on storage bay icons.
+
+setting_injector_automation,Immunivax injector inspection automation
+setting_injector_automation_tip,Automatically inspect Immunivax injectors when the selected condition is met.
+injector_automation_level_0,Off
+injector_automation_level_1,Own the Immunivax inspection guide
+injector_automation_level_2,Always
+setting_aug_identification,Automatic Aug identification
+setting_aug_identification_tip,Automatically highlight the shotgun when an Aug visits.

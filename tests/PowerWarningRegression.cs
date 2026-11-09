@@ -14,11 +14,18 @@ public static class MachineHelper
     public static readonly Dictionary<GameItem, GameSlotInventory> Slots = new Dictionary<GameItem, GameSlotInventory>();
     public static readonly HashSet<GameItem> Powered = new HashSet<GameItem>();
     public static GameSlotInventory GetBatterySlot(GameItem item) { GameSlotInventory slot; return item != null && Slots.TryGetValue(item, out slot) ? slot : null; }
+    public static readonly Dictionary<GameItem, GameSlotInventory> WaterSlots = new Dictionary<GameItem, GameSlotInventory>();
+    public static readonly Dictionary<GameItem, GameSlotInventory> OutputSlots = new Dictionary<GameItem, GameSlotInventory>();
+    public static readonly Dictionary<GameItem, List<GameItem>> Modules = new Dictionary<GameItem, List<GameItem>>();
+    public static List<GameItem> GetModules(GameItem item) { return Modules.ContainsKey(item) ? Modules[item] : new List<GameItem>(); }
+    public static GameInventory GetSlot(GameItem item, int index) { GameSlotInventory slot; return index == 2 && WaterSlots.TryGetValue(item, out slot) ? slot : index == 3 && OutputSlots.TryGetValue(item, out slot) ? slot : null; }
     public static bool CanPower(GameItem item, GameSlotInventory slot) { return item != null && slot != null && Powered.Contains(item); }
 }
 
 public static class MachineryHelper
 {
+    public static int GetCurrentPerformanceBonus(GameItem item) { return item.IntTags.ContainsKey("performance") ? item.IntTags["performance"] : 0; }
+    public static int GetCurrentQualityBonus(GameItem item) { return item.IntTags.ContainsKey("quality") ? item.IntTags["quality"] : 0; }
     public static readonly HashSet<GameItem> On = new HashSet<GameItem>();
     public static bool IsMachineryToggleOn(GameItem item) { return item != null && On.Contains(item); }
 }

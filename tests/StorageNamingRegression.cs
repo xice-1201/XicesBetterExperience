@@ -13,19 +13,47 @@ namespace UnityEngine
     public struct Vector3 { public float x, y, z; public Vector3(float x, float y, float z) { this.x=x; this.y=y; this.z=z; } }
     public struct Vector4 { }
     public struct Color { public float r, g, b, a; public Color(float r, float g, float b, float a) { this.r=r; this.g=g; this.b=b; this.a=a; } public static Color black, white; }
-    public class GameObject { public string name; public bool Destroyed; }
+    public class MonoBehaviour { }
+    public class GameObject
+    {
+        public string name; public bool Destroyed;
+        public readonly List<GameObject> Children = new List<GameObject>();
+        public readonly RectTransform transform;
+        public readonly Dictionary<Type, object> Components = new Dictionary<Type, object>();
+        public GameObject() { transform = new RectTransform { Owner = this }; }
+        public GameObject(string name, params Type[] types) : this() { this.name = name; }
+        public T GetComponent<T>() where T : class { return Components.ContainsKey(typeof(T)) ? Components[typeof(T)] as T : transform as T; }
+        public T AddComponent<T>() where T : new()
+        {
+            if (typeof(UnityEngine.UI.MaskableGraphic).IsAssignableFrom(typeof(T)) && Components.ContainsKey(typeof(TestImage)))
+                throw new InvalidOperationException("A GameObject can only contain one Graphic component");
+            var value = new T();
+            var graphic = value as UnityEngine.UI.MaskableGraphic;
+            if (graphic != null) graphic.rectTransform = transform;
+            Components[typeof(T)] = value; return value;
+        }
+    }
     public class RectTransform
     {
+        public GameObject Owner;
+        public void SetParent(RectTransform parent, bool worldPositionStays) { parent.Owner.Children.Add(Owner); }
         public Vector2 anchorMin, anchorMax, pivot, sizeDelta, anchoredPosition;
         public UnityEngine.Vector3 localEulerAngles;
         public void SetAsLastSibling() { }
+        public void SetAsFirstSibling() { }
     }
     public static class Object { public static void Destroy(GameObject gameObject) { gameObject.Destroyed = true; } }
+    public static class Canvas
+    {
+        public static event Action willRenderCanvases;
+        public static int Subscriptions { get { return willRenderCanvases == null ? 0 : willRenderCanvases.GetInvocationList().Length; } }
+        public static void Render() { if (willRenderCanvases != null) willRenderCanvases(); }
+    }
 }
 namespace TMPro
 {
     public enum FontStyles { Normal }
-    public enum TextAlignmentOptions { Bottom }
+    public enum TextAlignmentOptions { Bottom, Center }
     public enum TextOverflowModes { Ellipsis }
     public class TextMeshProUGUI
     {
@@ -40,7 +68,23 @@ namespace TMPro
 }
 namespace UnityEngine.UI
 {
+    public class Toggle { public bool isOn; public bool interactable = true; }
     public class Image { public enum Type { Simple, Sliced, Tiled, Filled } }
+    public class MaskableGraphic
+    {
+        public UnityEngine.RectTransform rectTransform;
+        public bool enabled, raycastTarget;
+        public int GeometryUpdates;
+        public void SetVerticesDirty() { GeometryUpdates++; }
+        protected virtual void OnPopulateMesh(VertexHelper vh) { }
+    }
+    public class VertexHelper
+    {
+        public int currentVertCount;
+        public void Clear() { currentVertCount = 0; }
+        public void AddVert(UnityEngine.Vector3 point, UnityEngine.Color color, UnityEngine.Vector2 uv) { currentVertCount++; }
+        public void AddTriangle(int a, int b, int c) { }
+    }
 }
 public class TestImage { public bool enabled, raycastTarget, preserveAspect; public UnityEngine.UI.Image.Type type; public float fillAmount; public object sprite; public UnityEngine.Color color; }
 public class TreeNodeRender
@@ -49,6 +93,7 @@ public class TreeNodeRender
     public readonly UnityEngine.RectTransform rectTransform = new UnityEngine.RectTransform();
     public readonly TMPro.TextMeshProUGUI text = new TMPro.TextMeshProUGUI();
     public readonly TestImage image = new TestImage();
+    public TreeNodeRender() { rectTransform.Owner = gameObject; gameObject.Components[typeof(TestImage)] = image; }
     public TreeNodeRender parent;
     public static readonly List<TreeNodeRender> Created = new List<TreeNodeRender>();
     public static TreeNodeRender InstantiateText() { var node = new TreeNodeRender(); Created.Add(node); return node; }
@@ -72,7 +117,7 @@ public static class StorageNamingRegression
     }
     private static GameItemElement Storage(string id, string name)
     {
-        var item = new GameItemElement { identifier = id };
+        var item = new GameItemElement { identifier = id, Owned = true };
         item.background.image.enabled = true;
         if (name != null) GeneralHelper.SetCustomName(item, name);
         return item;
@@ -81,7 +126,7 @@ public static class StorageNamingRegression
     {
         Check(ExperienceSettings.StorageNaming && ModConfig.Instance.StorageEntry.Value, "Storage naming defaults on");
         string[] ids = { "makeshift_storage_bay", "storage_bay", "storage_bay_large", "storage_bay_gun",
-            "storage_bay_chem", "smuggler_bay_mini", "smuggler_bay", "smuggler_bay_mod" };
+            "storage_bay_chem", "machine_bay", "machine_bay_ext", "fridge", "smuggler_bay_mini", "smuggler_bay", "smuggler_bay_mod" };
         foreach (string id in ids)
         {
             var item = Storage(id, "化学原料 <b>甲</b>");
@@ -115,6 +160,10 @@ public static class StorageNamingRegression
             var other = Storage(id, "不应显示"); StorageNameOverlay.Refresh(other);
             Check(Nodes(other).Count == 0, "Unrelated item excluded: " + id);
         }
+        var foreign = Storage("machine_bay", "Other owner"); foreign.Owned=false;
+        StorageNameOverlay.Refresh(foreign); Check(Nodes(foreign).Count==0, "Non-player storage names are hidden");
+        foreign.Owned=true; StorageNameOverlay.Refresh(foreign); Check(Nodes(foreign).Count==4, "Acquiring storage reveals its name");
+        foreign.Owned=false; StorageNameOverlay.Refresh(foreign); Check(Nodes(foreign).Count==0, "Losing ownership removes existing name nodes");
         var unnamed = Storage("storage_bay", null); StorageNameOverlay.Refresh(unnamed);
         Check(Nodes(unnamed).Count == 0, "Unnamed storage excluded");
         GeneralHelper.SetCustomName(unnamed, "   "); StorageNameSetPatch.Postfix(unnamed);
