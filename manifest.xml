@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Mod>
+  <ID>xice.betterexperience</ID>
+  <Name>Xice的体验优化</Name>
+  <Author>Xice</Author>
+  <ModVersion>0.3.8</ModVersion>
+  <Description>鉴定自动化、鉴定指南自动开关、储藏区命名显示、保留文档翻页、赃物及违禁品标记、电量告警、市场变动显示、单格价值、地下交易自动提货、鉴定回执自动清理。各功能可独立配置。</Description>
+  <GameVersions>
+    <Version>0.46D</Version>
+  </GameVersions>
+  <Prerequisites />
+  <Assemblies>
+    <Assembly>XicesBetterExperience.dll</Assembly>
+  </Assemblies>
+  <Capabilities />
+</Mod>

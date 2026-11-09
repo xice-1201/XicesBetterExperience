@@ -1,0 +1,32 @@
+config_tab_general,General
+config_tab_icons,Icons
+setting_power_warning,Power warning
+setting_power_warning_tip,Show a translucent warning triangle at the center of owned machines and tools with a battery slot when the battery is missing, cannot supply tonight's power, or the machine is switched off. Enabled by default.
+setting_auto_open_guide,Automatically open and close appraisal guides
+setting_auto_open_guide_tip,When inspecting a mechanical hand or ribwich or fuel canister automatically open its guide if you own it. Close the matching guide when inspection ends or its window is closed; leave other documents open. An already-open matching guide keeps its current page. Native reading restrictions apply.
+setting_storage_naming,Storage naming
+setting_appraisal_automation,Appraisal automation
+setting_appraisal_automation_tip,Left to right: Off / Junior / Intermediate / Senior / Expert. Defaults to Expert. Once your appraiser rank reaches the selected level and you own a matching or higher certificate customer appraisals automatically submit the exact value for native perfect appraisal settlement. Otherwise inspection remains manual.
+automation_scale,Off → Junior → Intermediate → Senior → Expert
+automation_selected,Selected:
+automation_level_0,Off
+automation_level_1,Junior
+automation_level_2,Intermediate
+automation_level_3,Senior
+automation_level_4,Expert
+setting_retain_document_page,Remember document pages
+setting_retain_document_page_tip,Reopen each multi-page guide at its last viewed page. Works with automatic appraisal guide opening and closing. Pages are remembered separately for this game session and reset when the game exits.
+setting_storage_naming_tip,Display names assigned with the blue label printer on storage bay and gunsmith storage bay and chemist storage bay and smuggler bay icons including their expanded forms. Unnamed storage has no label. Disabling this option preserves saved names.
+setting_stolen_marker,Stolen item marker
+setting_stolen_marker_tip,Show a yellow frame on item icons that still have positive stolen heat. The frame disappears when heat reaches zero or stolen status is removed.
+setting_contraband_marker,Contraband marker
+setting_contraband_marker_tip,Show a red frame on item icons carrying a native contraband level. The frame disappears when contraband status is removed.
+setting_single_cell_value,Single-cell value
+setting_single_cell_value_tip,Show the item's own estimated value divided by its current occupied grid cells between estimated value and base value. Enabled by default.
+single_cell_value_line, Single-cell value: {0}
+setting_auto_discard_receipt,Automatically discard appraisal receipts
+setting_auto_discard_receipt_tip,When enabled, appraisal slips for mechanical hands, ribwiches or fuel canisters, and market intelligence or ordinary event rumor slips, are automatically put in the trash. Enabled by default.
+setting_market_change_marker,Show market changes
+setting_market_change_marker_tip,Shows an up or down arrow at the item's top-left corner when its total market value change is positive or negative. Enabled by default.
+setting_power_warning,Power warning
+setting_power_warning_tip,Show a translucent warning icon at the center of player-owned machines or tools with a battery slot when the battery is empty, cannot power one night of operation, or the machine is switched off. Enabled by default.
