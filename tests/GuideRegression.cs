@@ -18,6 +18,9 @@ namespace UnityEngine
     public static class Debug { public static int Errors; public static void LogError(object error) { Errors++; } public static void Log(object message) { } public static void LogWarning(object message) { } }
 }
 public interface IMod { void Init(ModManifest manifest); void OnEnable(); void OnDisable(); }
+// Window lifecycle uses its own focused harness with UI coordinate boundaries.
+public static class AugIdentificationAutomation { public static void Clear() { } public static void ConfigApplied() { } }
+public static class WindowLayoutMemory { public static void Clear() { } public static void ConfigApplied() { } }
 public class ModManifest { public string ID; }
 public class ModLog { public ModLog(ModManifest manifest) { } public void Log(object message) { } }
 public class ConfigEntry<T> { public T Value; public void Set(T value) { Value = value; } }
@@ -30,7 +33,12 @@ public class ModConfig
     public string Key;
     public Func<string> Label, Tip;
     public ConfigEntry<bool> Entry;
+    public ConfigEntry<bool> LayoutEntry;
+    public ConfigEntry<string> LayoutData;
+    public ConfigEntry<string> Define(string key, string value, string section, Func<string> label)
+    { Definitions++; return LayoutData = new ConfigEntry<string> { Value = value }; }
     public ConfigEntry<bool> StorageEntry;
+    public ConfigEntry<bool> CapacityEntry;
     public ConfigEntry<bool> PageEntry;
     public ConfigEntry<bool> StolenEntry;
     public ConfigEntry<bool> ContrabandEntry;
@@ -38,20 +46,27 @@ public class ModConfig
     public ConfigEntry<bool> ExchangeAutoPickupEntry;
     public ConfigEntry<bool> AutoDiscardReceiptEntry;
     public ConfigEntry<bool> PowerWarningEntry;
+    public ConfigEntry<bool> OverflowWarningEntry;
     public ConfigEntry<bool> MarketChangeEntry;
     public ConfigEntry<int> AutomationEntry;
+    public readonly Dictionary<string, ConfigEntry<int>> AutomationEntries = new Dictionary<string, ConfigEntry<int>>();
     public int AutomationMin, AutomationMax;
     public string ModId { get { return ModEntry.ModId; } }
     public ConfigEntry<int> Define(string key, int value, string section, Func<string> label, int? min = null, int? max = null, Func<string> tooltip = null)
     {
         Definitions++; AutomationMin = min.Value; AutomationMax = max.Value;
-        return AutomationEntry = new ConfigEntry<int> { Value = value };
+        var entry = new ConfigEntry<int> { Value = value };
+        AutomationEntries[key] = entry;
+        if (key == "appraisal_automation") AutomationEntry = entry;
+        return entry;
     }
     public static ModConfig For(string id) { RequestedId = id; return Instance; }
     public ConfigEntry<bool> Define(string key, bool value, string section, Func<string> label, Func<string> tip)
     {
         Definitions++;
+        if (key == "retain_window_layout") return LayoutEntry = new ConfigEntry<bool> { Value = value };
         if (key == "retain_document_page") return PageEntry = new ConfigEntry<bool> { Value = value };
+        if (key == "storage_capacity") return CapacityEntry = new ConfigEntry<bool> { Value = value };
         if (key == "storage_naming") return StorageEntry = new ConfigEntry<bool> { Value = value };
         if (key == "stolen_marker") return StolenEntry = new ConfigEntry<bool> { Value = value };
         if (key == "contraband_marker") return ContrabandEntry = new ConfigEntry<bool> { Value = value };
@@ -59,6 +74,7 @@ public class ModConfig
         if (key == "exchange_auto_pickup") return ExchangeAutoPickupEntry = new ConfigEntry<bool> { Value = value };
         if (key == "auto_discard_appraisal_receipt") return AutoDiscardReceiptEntry = new ConfigEntry<bool> { Value = value };
         if (key == "power_warning") return PowerWarningEntry = new ConfigEntry<bool> { Value = value };
+        if (key == "overflow_warning") return OverflowWarningEntry = new ConfigEntry<bool> { Value = value };
         if (key == "market_change_marker") return MarketChangeEntry = new ConfigEntry<bool> { Value = value };
         if (key == "auto_open_appraisal_guide")
         {
@@ -74,8 +90,14 @@ public static class ModHelper
     public static string GetLocalized(string id, string key) { return Language + ":" + id + ":" + key; }
 }
 public class GraphNodeStorage { public List<GraphNodeStorage> children = new List<GraphNodeStorage>(); }
+public class ItemCondition { public string identifier; }
+public class ItemFeature { public ItemCondition realCondition, current; public ItemCondition GetCurrentItemCondition() { return current; } }
 public class GameItem : GraphNodeStorage
 {
+    public TagState GetTagReadonly(string tag) { return new TagState { Value = IntTags.ContainsKey(tag) ? IntTags[tag] : 0 }; }
+    public ItemFeature InjectorFeature;
+    public ItemFeature FindItemFeatureByCategory(string category) { return InjectorFeature; }
+    public TestGridShape modifiedShape = new TestGridShape();
     public string identifier;
     public int uniqueId;
     public GameInventory parentInventory;
@@ -131,6 +153,12 @@ public class GameItemElement : GameItem
     public void ToggleFakeBackground(bool enabled, UnityEngine.Vector4 color) { }
     public void UpdateRectTransform() { }
     public void Destroy() { Destroyed = true; }
+}
+public class TestGridShape
+{
+    public int minX, minY, maxX, maxY;
+    public readonly HashSet<string> Empty = new HashSet<string>();
+    public int Get(int x, int y) { return Empty.Contains(x + "," + y) ? 0 : 1; }
 }
 public class StolenHelper
 {
@@ -223,10 +251,18 @@ public class GameInventory : GraphNodeStorage
     { bool removed = childItems.Remove(item); if (removed) { children.Remove(item); item.parentInventory = null; } return removed; }
     public virtual bool UncheckedAccept(GameItem item)
     { if (item == null || item.parentInventory != null) return false; childItems.Add(item); children.Add(item); item.parentInventory = this; return true; }
-    public virtual GameItem GetParentItem() { return null; }
+    public GameItem Owner;
+    public virtual GameItem GetParentItem() { return Owner; }
+}
+public class TestInventoryShape
+{
+    public int width=10, height=10;
+    public readonly HashSet<string> Blocked = new HashSet<string>();
+    public int Get(int x, int y) { return Blocked.Contains(x + "," + y) ? 1 : 0; }
 }
 public class GameGridInventory : GameInventory
 {
+    public TestInventoryShape inventoryShape = new TestInventoryShape();
     public bool CanAccept = true;
     public override GameItem TryAcceptAll(GameItem item)
     { if (!CanAccept) return null; return base.TryAcceptAll(item); }
@@ -234,6 +270,8 @@ public class GameGridInventory : GameInventory
 public class ExchangeManager { public List<GameItem> itemsBuffer = new List<GameItem>(); }
 public static class GraphUtils
 {
+    public static List<T> FindParentsType<T>(GraphNodeStorage node)
+    { var result=new List<T>(); var inv=node as GameInventory; if (inv!=null && inv.Owner is T) result.Add((T)(object)inv.Owner); return result; }
     public static int Deliveries;
     public static GraphNodeStorage LastTarget;
     public static int TryAcceptAll(GraphNodeStorage target, GameItem item, int amount = -1)
@@ -251,12 +289,25 @@ public static class GraphUtils
 public static class HealthData { public static bool Readable = true; public static bool CanRead() { return Readable; } }
 public class InspectionUIManager
 {
+    public ActiveObject panel = new ActiveObject { activeSelf = true }, confrontPanel = new ActiveObject { activeSelf = true };
+    public UnityEngine.UI.Toggle toggle1 = new UnityEngine.UI.Toggle(), toggle2 = new UnityEngine.UI.Toggle(), toggle3 = new UnityEngine.UI.Toggle(), toggle4 = new UnityEngine.UI.Toggle(), toggle5 = new UnityEngine.UI.Toggle();
+    public static bool Locked;
+    public static bool IsConfrontLocked() { return Locked; }
+    public void ResetAllConfrontToggle() { toggle1.isOn = toggle2.isOn = toggle3.isOn = toggle4.isOn = toggle5.isOn = false; }
     public GameItem currentInspectingItem;
     public void OnInspectItem(GameItem item) { currentInspectingItem = item; }
     public void CloseUI() { currentInspectingItem = null; }
 }
-public class ActiveObject { public bool activeSelf; public TestTransform transform = new TestTransform(); }
+public class ActiveObject : UnityEngine.GameObject { public bool activeSelf; public bool activeInHierarchy { get { return activeSelf; } } public new TestTransform transform = new TestTransform(); }
 public class TestTransform { public int childCount = 8; }
+public class PaperUIManager
+{
+    public static PaperUIManager Instance = new PaperUIManager();
+    public ActiveObject injectorGuidePanel = new ActiveObject();
+    public int Opens, Closes;
+    public void OpenInjectorGuide() { Opens++; injectorGuidePanel.activeSelf = true; }
+    public void CloseInjectorGuide() { Closes++; injectorGuidePanel.activeSelf = false; }
+}
 public class MultiPageUIManager
 {
     public static MultiPageUIManager Instance;
@@ -333,9 +384,10 @@ public static class GuideRegression
         UnityEngine.Application.version = "0.46D";
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
-        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 11 &&
+        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 20 &&
             ModConfig.Instance.Key == "auto_open_appraisal_guide" && ExperienceSettings.AutoOpenAppraisalGuide,
-            "Ten independent native config entries");
+            "Eighteen settings plus two internal layout entries");
+        Check(!ExperienceSettings.AugIdentification && ExperienceSettings.SettingsTab("aug_identification") == "automation" && !ExperienceSettings.IsAutomationSetting("aug_identification"), "Aug checkbox defaults off in automation tab without slider extras");
         Check(ModConfig.Instance.Label().StartsWith("zh:"), "Chinese config label");
         ModHelper.Language = "en";
         Check(ModConfig.Instance.Label().StartsWith("en:") && ModConfig.Instance.Tip().StartsWith("en:"), "Lazy localized label and tooltip");
@@ -435,7 +487,9 @@ public static class GuideRegression
         Check(UnityEngine.Debug.Errors == 1, "Close failure logged without breaking native close");
         Console.WriteLine("PASS: auto-close config/mod gates, unrelated inspections, missing UI and exception isolation.");
         PlayerStore.Instance = new PlayerStore();
+        InjectorInspectionRegression.Run();
         StorageNamingRegression.Run(Entry);
+        StorageCapacityRegression.Run(Entry);
         StolenHeatRegression.Run(Entry);
         ContrabandMarkerRegression.Run(Entry);
         DocumentPageRegression.Run(Entry);
@@ -443,6 +497,7 @@ public static class GuideRegression
         ExchangeAutoPickupRegression.Run(Entry);
         AutoDiscardAppraisalReceiptRegression.Run(Entry);
         PowerWarningRegression.Run(Entry);
+        OverflowWarningRegression.Run(Entry);
         MarketChangeRegression.Run(Entry);
         }
         catch (Exception error)

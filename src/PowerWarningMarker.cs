@@ -26,11 +26,16 @@ namespace XicesBetterExperience
             return !MachineHelper.CanPower(item, battery);
         }
 
+        public static bool IsWarningActive(GameItem item)
+        {
+            return ModEntry.IsEnabled && ExperienceSettings.PowerWarning && NeedsWarning(item);
+        }
+
         public static void Refresh(GameItem item)
         {
             GameItemElement element = item as GameItemElement;
             if (element == null) return;
-            try { RefreshElement(element); }
+            try { RefreshElement(element); OverflowWarningMarker.Refresh(element); }
             catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not refresh power warning: " + error); }
         }
 

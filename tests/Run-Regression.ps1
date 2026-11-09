@@ -11,8 +11,12 @@ $arguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $
     ('/reference:' + (Join-Path $frameworkPath 'System.Core.dll')),
     (Join-Path $projectRoot 'src/ModEntry.cs'),
     (Join-Path $projectRoot 'src/ExperienceSettings.cs'),
+    (Join-Path $projectRoot 'src/InjectorInspectionAutomation.cs'),
+    (Join-Path $PSScriptRoot 'InjectorInspectionRegression.cs'),
     (Join-Path $projectRoot 'src/AutoOpenAppraisalGuide.cs'),
     (Join-Path $projectRoot 'src/StorageNameOverlay.cs'),
+    (Join-Path $projectRoot 'src/StorageCapacityOverlay.cs'),
+    (Join-Path $PSScriptRoot 'StorageCapacityRegression.cs'),
     (Join-Path $projectRoot 'src/DocumentPageMemory.cs'),
     (Join-Path $projectRoot 'src/AppraisalAutomation.cs'),
     (Join-Path $projectRoot 'src/StolenHeatMarker.cs'),
@@ -20,7 +24,11 @@ $arguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $
     (Join-Path $projectRoot 'src/ExchangeAutoPickup.cs'),
     (Join-Path $projectRoot 'src/AutoDiscardAppraisalReceipt.cs'),
     (Join-Path $projectRoot 'src/PowerWarningMarker.cs'),
+    (Join-Path $projectRoot 'src/OverflowWarningMarker.cs'),
+    (Join-Path $PSScriptRoot 'OverflowWarningRegression.cs'),
     (Join-Path $projectRoot 'src/MarketChangeMarker.cs'),
+    (Join-Path $projectRoot 'src/MarkerGraphic.cs'),
+    (Join-Path $projectRoot 'src/ItemStatusBackground.cs'),
     (Join-Path $PSScriptRoot 'AppraisalAutomationRegression.cs'),
     (Join-Path $PSScriptRoot 'DocumentPageRegression.cs'),
     (Join-Path $PSScriptRoot 'StorageNamingRegression.cs'),
@@ -35,3 +43,28 @@ $arguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $
 if ($LASTEXITCODE -ne 0) { throw 'Regression harness compilation failed.' }
 & $testExe
 if ($LASTEXITCODE -ne 0) { throw 'Guide regression failed.' }
+
+$layoutExe = Join-Path $outputPath 'WindowLayoutRegression.exe'
+$layoutArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $layoutExe),
+    ('/reference:' + (Join-Path $frameworkPath 'mscorlib.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.Core.dll')),
+    (Join-Path $projectRoot 'src/WindowLayoutMemory.cs'),
+    (Join-Path $PSScriptRoot 'WindowLayoutRegression.cs'))
+& (Join-Path $UnityEditorPath 'Data/NetCoreRuntime/dotnet.exe') (Join-Path $UnityEditorPath 'Data/DotNetSdkRoslyn/csc.dll') @layoutArguments
+if ($LASTEXITCODE -ne 0) { throw 'Window layout regression compilation failed.' }
+& $layoutExe
+if ($LASTEXITCODE -ne 0) { throw 'Window layout regression failed.' }
+
+$augExe = Join-Path $outputPath 'AugIdentificationRegression.exe'
+$augArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $augExe),
+    ('/reference:' + (Join-Path $frameworkPath 'mscorlib.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.Core.dll')),
+    (Join-Path $projectRoot 'src/AugIdentificationRules.cs'),
+    (Join-Path $projectRoot 'src/AugIdentificationAutomation.cs'),
+    (Join-Path $PSScriptRoot 'AugIdentificationRegression.cs'))
+& (Join-Path $UnityEditorPath 'Data/NetCoreRuntime/dotnet.exe') (Join-Path $UnityEditorPath 'Data/DotNetSdkRoslyn/csc.dll') @augArguments
+if ($LASTEXITCODE -ne 0) { throw 'Aug identification regression compilation failed.' }
+& $augExe
+if ($LASTEXITCODE -ne 0) { throw 'Aug identification regression failed.' }

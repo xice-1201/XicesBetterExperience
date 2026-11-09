@@ -27,16 +27,21 @@ namespace XicesBetterExperience
         {
             if (IsEnabled) return;
             IsEnabled = true;
+            ModHook.OnGameLoadedLate += AugIdentificationAutomation.Clear;
             ModHook.OnGameLoadedLate += StorageNameOverlay.RefreshLoaded;
+            ModHook.OnGameLoadedLate += StorageCapacityOverlay.RefreshLoaded;
             ModHook.OnGameLoadedLate += StolenHeatMarker.RefreshLoaded;
             ModHook.OnGameLoadedLate += ContrabandMarker.RefreshLoaded;
             ModHook.OnGameLoadedLate += PowerWarningMarker.RefreshLoaded;
+            ModHook.OnGameLoadedLate += OverflowWarningMarker.RefreshLoaded;
             ModHook.OnGameLoadedLate += MarketChangeMarker.RefreshLoaded;
             ModHook.OnModConfigApplied += OnConfigApplied;
             StorageNameOverlay.RefreshLoaded();
+            StorageCapacityOverlay.RefreshLoaded();
             StolenHeatMarker.RefreshLoaded();
             ContrabandMarker.RefreshLoaded();
             PowerWarningMarker.RefreshLoaded();
+            OverflowWarningMarker.RefreshLoaded();
             MarketChangeMarker.RefreshLoaded();
         }
 
@@ -44,16 +49,24 @@ namespace XicesBetterExperience
         {
             if (!IsEnabled) return;
             IsEnabled = false;
+            WindowLayoutMemory.Clear();
+            AugIdentificationAutomation.Clear();
+            InjectorInspectionAutomation.Restore();
+            ModHook.OnGameLoadedLate -= AugIdentificationAutomation.Clear;
             ModHook.OnGameLoadedLate -= StorageNameOverlay.RefreshLoaded;
+            ModHook.OnGameLoadedLate -= StorageCapacityOverlay.RefreshLoaded;
             ModHook.OnGameLoadedLate -= StolenHeatMarker.RefreshLoaded;
             ModHook.OnGameLoadedLate -= ContrabandMarker.RefreshLoaded;
             ModHook.OnGameLoadedLate -= PowerWarningMarker.RefreshLoaded;
+            ModHook.OnGameLoadedLate -= OverflowWarningMarker.RefreshLoaded;
             ModHook.OnGameLoadedLate -= MarketChangeMarker.RefreshLoaded;
             ModHook.OnModConfigApplied -= OnConfigApplied;
             StorageNameOverlay.Clear();
+            StorageCapacityOverlay.Clear();
             StolenHeatMarker.Clear();
             ContrabandMarker.Clear();
             PowerWarningMarker.Clear();
+            OverflowWarningMarker.Clear();
             MarketChangeMarker.Clear();
         }
 
@@ -66,10 +79,14 @@ namespace XicesBetterExperience
         internal static void RefreshAfterConfigApplied(string modId)
         {
             if (modId != ModId || !IsEnabled) return;
+            WindowLayoutMemory.ConfigApplied();
+            AugIdentificationAutomation.ConfigApplied();
             StorageNameOverlay.RefreshLoaded();
+            StorageCapacityOverlay.RefreshLoaded();
             StolenHeatMarker.RefreshLoaded();
             ContrabandMarker.RefreshLoaded();
             PowerWarningMarker.RefreshLoaded();
+            OverflowWarningMarker.RefreshLoaded();
             MarketChangeMarker.RefreshLoaded();
         }
     }

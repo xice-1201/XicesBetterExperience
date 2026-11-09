@@ -25,6 +25,9 @@ namespace XicesBetterExperience
                 case "storage_bay_large":
                 case "storage_bay_gun":
                 case "storage_bay_chem":
+                case "machine_bay":
+                case "machine_bay_ext":
+                case "fridge":
                 case "smuggler_bay_mini":
                 case "smuggler_bay":
                 case "smuggler_bay_mod": return true;
@@ -47,7 +50,7 @@ namespace XicesBetterExperience
         {
             if (item.IsDestroyed() || item.handler == null) { Remove(item); return; }
             string name = ModEntry.IsEnabled && ExperienceSettings.StorageNaming && !item.isDebugMenu &&
-                IsStorage(item) && GeneralHelper.HasCustomName(item) ? GeneralHelper.GetCustomName(item) : null;
+                IsStorage(item) && GeneralHelper.IsItemOwned(item) && GeneralHelper.HasCustomName(item) ? GeneralHelper.GetCustomName(item) : null;
             if (String.IsNullOrWhiteSpace(name)) { Remove(item); return; }
             Overlay overlay;
             if (!overlays.TryGetValue(item, out overlay))

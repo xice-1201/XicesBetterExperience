@@ -10,6 +10,7 @@ namespace XicesBetterExperience
     {
         private const string GeneralTab = "general";
         private const string IconTab = "icons";
+        private const string AutomationTab = "automation";
 
         public static bool Prefix(LoadedMod mod, ref CustomUIWindow __result)
         {
@@ -33,10 +34,13 @@ namespace XicesBetterExperience
             b.BeginScrollFlexible();
             b.BeginTabs();
             b.BeginTab(Text("config_tab_general"));
-            BuildEntries(b, config, false);
+            BuildEntries(b, config, GeneralTab);
             b.End();
             b.BeginTab(Text("config_tab_icons"));
-            BuildEntries(b, config, true);
+            BuildEntries(b, config, IconTab);
+            b.End();
+            b.BeginTab(Text("config_tab_automation"));
+            BuildEntries(b, config, AutomationTab);
             b.End();
             b.EndTabs();
             b.End();
@@ -59,14 +63,14 @@ namespace XicesBetterExperience
             return window;
         }
 
-        private static void BuildEntries(CustomUIBuilder b, ModConfig config, bool icons)
+        private static void BuildEntries(CustomUIBuilder b, ModConfig config, string tab)
         {
             foreach (ConfigEntry entry in config.Entries)
             {
-                bool isIcon = entry.Key == "storage_naming" || entry.Key == "stolen_marker" || entry.Key == "contraband_marker" || entry.Key == "power_warning" || entry.Key == "market_change_marker";
-                if (isIcon != icons) continue;
+                if (ExperienceSettings.IsInternalSetting(entry.Key)) continue;
+                if (ExperienceSettings.SettingsTab(entry.Key) != tab) continue;
                 BuildEntry(b, config, entry);
-                if (entry.Key == "appraisal_automation") AppraisalAutomationSlider.AddExtras(b, config, entry);
+                if (ExperienceSettings.IsAutomationSetting(entry.Key)) AppraisalAutomationSlider.AddExtras(b, config, entry);
             }
         }
 
@@ -110,6 +114,7 @@ namespace XicesBetterExperience
             bool changed = false, restart = false;
             foreach (ConfigEntry entry in config.Entries)
             {
+                if (ExperienceSettings.IsInternalSetting(entry.Key)) continue;
                 CustomUIElement element = window.Get(entry.Key);
                 if (element == null || !element.IsAlive) continue;
                 object value = ReadWidget(entry, element);
@@ -134,6 +139,7 @@ namespace XicesBetterExperience
             if (window == null || !window.IsAlive) return;
             foreach (ConfigEntry entry in config.Entries)
             {
+                if (ExperienceSettings.IsInternalSetting(entry.Key)) continue;
                 CustomUIElement element = window.Get(entry.Key);
                 if (element != null && element.IsAlive) WriteWidget(entry, element, entry.BoxedDefault);
             }

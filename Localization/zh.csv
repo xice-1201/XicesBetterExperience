@@ -1,13 +1,11 @@
-config_tab_general,通常
+﻿config_tab_general,通常
 config_tab_icons,图标
 setting_power_warning,电量告警
 setting_power_warning_tip,当对应工具/机器的电量不足以在当晚继续运行时，在物品图标上显示警告。
 setting_auto_open_guide,自动打开和关闭鉴定指南
 setting_auto_open_guide_tip,执行鉴定时，自动打开持有的鉴定指南；鉴定结束时自动关闭。
 setting_storage_naming,储藏区命名
-setting_appraisal_automation,鉴定自动化
 setting_appraisal_automation_tip,达到对应鉴定师等级后，自动执行完美鉴定。
-automation_scale,不开启 → 初级 → 中级 → 高级 → 专家
 automation_selected,当前选择：
 automation_level_0,不开启
 automation_level_1,初级
@@ -15,6 +13,8 @@ automation_level_2,中级
 automation_level_3,高级
 automation_level_4,专家
 setting_retain_document_page,保留文档翻页
+setting_retain_window_layout,保留子窗口布局
+setting_retain_window_layout_tip,记忆游戏子窗口的位置和大小
 setting_retain_document_page_tip,重新打开多页指南时，直接回到上次阅读页面。
 setting_storage_naming_tip,被蓝色标签打印机命名的储藏区，其名称会显示在图标上。
 setting_stolen_marker,赃物标记
@@ -29,4 +29,20 @@ setting_exchange_auto_pickup_tip,地下交易得到的货物自动摆放在柜�
 setting_auto_discard_receipt,自动清理回执
 setting_auto_discard_receipt_tip,自动将鉴定单、市场情报丢弃至垃圾桶。
 setting_market_change_marker,市场变动显示
+setting_overflow_warning,溢出告警
+setting_overflow_warning_tip,当对应工具/机器的产物即将溢出时，在物品图标上显示警告
 setting_market_change_marker_tip,物品所属类型存在市场价值变动时，显示在物品图标上。
+config_tab_automation,自动化
+setting_appraisal_automation_hand,仿生机械手鉴定自动化
+setting_appraisal_automation_ribwich,肋明治鉴定自动化
+setting_appraisal_automation_plasma,等离子燃料匣鉴定自动化
+setting_storage_capacity,储存区容量比例
+setting_storage_capacity_tip,在储藏区图标上显示容量占用比例
+
+setting_injector_automation,免疫宁注射器检查自动化
+setting_injector_automation_tip,满足条件时，自动检查免疫宁注射器
+injector_automation_level_0,不开启
+injector_automation_level_1,拥有免疫宁检测指南
+injector_automation_level_2,总是
+setting_aug_identification,自动鉴别改造体
+setting_aug_identification_tip,改造体到访时自动高亮霰弹枪

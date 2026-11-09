@@ -11,8 +11,8 @@ if (!(Test-Path -LiteralPath $compiler) -or !(Test-Path -LiteralPath $compilerHo
     throw 'Unity Roslyn compiler not found. Supply -UnityEditorPath pointing to the Editor directory.'
 }
 $referenceNames = @('mscorlib.dll', 'netstandard.dll', 'System.dll', 'System.Core.dll',
-    'UnityEngine.CoreModule.dll', 'UnityEngine.TextRenderingModule.dll', 'UnityEngine.UI.dll', 'Unity.TextMeshPro.dll',
-    '0Harmony.dll', 'Assembly-CSharp.dll')
+    'UnityEngine.CoreModule.dll', 'UnityEngine.TextRenderingModule.dll', 'UnityEngine.UIModule.dll', 'UnityEngine.UI.dll', 'Unity.TextMeshPro.dll',
+    '0Harmony.dll', 'Assembly-CSharp.dll', 'Assembly-CSharp-firstpass.dll')
 $referenceArgs = foreach ($name in $referenceNames) {
     $referencePath = Join-Path $managedPath $name
     if (!(Test-Path -LiteralPath $referencePath)) { throw "Missing game reference: $referencePath" }
@@ -27,5 +27,6 @@ $compilerArgs = @('/nologo', '/noconfig', '/target:library', '/optimize+', '/nos
 if ($LASTEXITCODE -ne 0) { throw "C# compilation failed: $LASTEXITCODE" }
 Copy-Item -LiteralPath (Join-Path $projectRoot 'manifest.xml') -Destination $packagePath
 Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination $packagePath
+Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination $packagePath
 Copy-Item -LiteralPath (Join-Path $projectRoot 'Localization') -Destination $packagePath -Recurse -Force
 Write-Output "Built package: $packagePath"

@@ -19,6 +19,22 @@ namespace XicesBetterExperience
         public static int GetNetMarketModifier(GameItem item)
         {
             if (item == null) return 0;
+            // Signs and permits represent their merchandise's market, not their own value.
+            switch (item.identifier)
+            {
+                case "sign_water": return CommissaryData.GetTotalTypeMarketPriceModifier("WATER");
+                case "sign_food": return CommissaryData.GetTotalTypeMarketPriceModifier("FOOD");
+                case "sign_medical": return CommissaryData.GetTotalTypeMarketPriceModifier("MEDICAL");
+                case "sign_household": return CommissaryData.GetTotalTypeMarketPriceModifier("HOUSEHOLD_GOOD");
+                case "sign_material": return CommissaryData.GetTotalTypeMarketPriceModifier("MATERIAL");
+                case "sign_firearm":
+                case "sign_firearm_heavy":
+                case "permit_gun_1":
+                case "permit_gun_2":
+                case "permit_gun_3":
+                    return CommissaryData.GetTotalTypeMarketPriceModifier("WEAPON") +
+                        CommissaryData.GetTotalTypeMarketPriceModifier("FIREARM");
+            }
             int total = 0;
             List<string> types = item.GetGameItemType();
             if (types == null) return 0;
@@ -41,7 +57,7 @@ namespace XicesBetterExperience
             int modifier = GetNetMarketModifier(item);
             Overlay overlay;
             bool active = ModEntry.IsEnabled && ExperienceSettings.MarketChangeMarker &&
-                GeneralHelper.IsItemOwned(item) && modifier != 0;
+                modifier != 0;
             if (!overlays.TryGetValue(item, out overlay))
             {
                 if (!active) return;
@@ -52,70 +68,55 @@ namespace XicesBetterExperience
             Set(overlay.Drag, item.fakeBackground.image.enabled && active, modifier);
         }
 
+        private static readonly Dictionary<TreeNodeRender, MarkerGraphic> graphics = new Dictionary<TreeNodeRender, MarkerGraphic>();
+
         private static TreeNodeRender[] Create(TreeNodeRender parent)
         {
             if (parent == null) return new TreeNodeRender[0];
-            float size = UISettings.current == null ? 24f : UISettings.current.gridSize * 0.5f;
-            float cellCenter = size * 0.5f;
-            TreeNodeRender[] parts = new TreeNodeRender[4];
-            for (int i = 0; i < parts.Length; i++)
+            TreeNodeRender node = TreeNodeRender.Instantiate().SetParent(parent);
+            node.gameObject.name = "XicesBetterExperience.MarketChange";
+            graphics.Add(node, MarkerGraphic.Attach(node));
+            return new[] { node };
+        }
+
+        internal static List<MarkerTriangle> BuildArrow(float size, bool up)
+        {
+            var result = new List<MarkerTriangle>();
+            // A pale outer edge, dark keyline and saturated fill keep the arrow
+            // legible against both status colors and detailed item sprites.
+            AddArrow(result, size, up, 1f, new Color(0.95f, 0.96f, 1f, 1f));
+            AddArrow(result, size, up, 0.86f, new Color(0.08f, 0.09f, 0.12f, 1f));
+            AddArrow(result, size, up, 0.65f, up ? new Color(1f, 0.18f, 0.18f, 1f) : new Color(0.15f, 0.95f, 0.35f, 1f));
+            return result;
+        }
+
+        private static void AddArrow(List<MarkerTriangle> target, float size, bool up, float scale, Color color)
+        {
+            Vector2[] points = { new Vector2(0.5f, 0.04f), new Vector2(0.96f, 0.48f),
+                new Vector2(0.68f, 0.48f), new Vector2(0.68f, 0.96f),
+                new Vector2(0.32f, 0.96f), new Vector2(0.32f, 0.48f), new Vector2(0.04f, 0.48f) };
+            for (int i = 0; i < points.Length; i++)
             {
-                TreeNodeRender node = TreeNodeRender.Instantiate().SetParent(parent);
-                node.gameObject.name = "XicesBetterExperience.MarketChange";
-                // A sprite-less Unity Image renders as a flat white quad, which gives
-                // us a crisp, tintable arrow without stretching an unrelated atlas icon.
-                node.image.sprite = null;
-                node.image.type = UnityEngine.UI.Image.Type.Simple;
-                node.image.raycastTarget = false;
-                node.rectTransform.anchorMin = new Vector2(0f, 1f);
-                node.rectTransform.anchorMax = new Vector2(0f, 1f);
-                node.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-                parts[i] = node;
+                float x = 0.5f + (points[i].x - 0.5f) * scale;
+                float y = 0.5f + (points[i].y - 0.5f) * scale;
+                points[i] = new Vector2(x * size, -(up ? y : 1f - y) * size);
             }
-
-            Configure(parts, size, true);
-            return parts;
-        }
-
-        private static void Configure(TreeNodeRender[] parts, float size, bool up)
-        {
-            float center = size * 0.5f;
-            // Four axis-aligned bars form a compact, solid arrow: a shaft and
-            // three stepped rows for the triangular head. Mirroring the rows
-            // avoids rotating each piece around its own center.
-            SetPart(parts[0], size * 0.14f, size * 0.24f,
-                center, -size * (up ? 0.38f : 0.18f), 0f);
-            SetPart(parts[1], size * 0.18f, size * 0.09f,
-                center, -size * (up ? 0.14f : 0.42f), 0f);
-            SetPart(parts[2], size * 0.30f, size * 0.09f,
-                center, -size * (up ? 0.22f : 0.34f), 0f);
-            SetPart(parts[3], size * 0.42f, size * 0.09f,
-                center, -size * (up ? 0.30f : 0.26f), 0f);
-        }
-
-        private static void SetPart(TreeNodeRender node, float width, float height,
-            float x, float y, float angle)
-        {
-            if (node == null) return;
-            node.rectTransform.sizeDelta = new Vector2(width, height);
-            node.rectTransform.anchoredPosition = new Vector2(x, y);
-            node.rectTransform.localEulerAngles = new Vector3(0f, 0f, angle);
+            target.Add(new MarkerTriangle(points[0], points[1], points[6], color));
+            target.Add(new MarkerTriangle(points[2], points[3], points[4], color));
+            target.Add(new MarkerTriangle(points[2], points[4], points[5], color));
         }
 
         private static void Set(TreeNodeRender[] parts, bool visible, int modifier)
         {
-            if (parts == null) return;
-            Color color = modifier > 0
-                ? new Color(0.95f, 0.08f, 0.08f, 1f)
-                : new Color(0.08f, 0.85f, 0.2f, 1f);
             float size = UISettings.current == null ? 24f : UISettings.current.gridSize * 0.5f;
-            Configure(parts, size, modifier > 0);
             foreach (TreeNodeRender node in parts)
             {
-                if (node == null) continue;
                 node.rectTransform.SetAsLastSibling();
-                node.image.color = color;
-                node.image.enabled = visible;
+                node.rectTransform.sizeDelta = new Vector2(size, size);
+                node.rectTransform.anchoredPosition = new Vector2(1f, -1f);
+                MarkerGraphic graphic = graphics[node];
+                graphic.UpdateGeometry(BuildArrow(size, modifier > 0));
+                graphic.enabled = visible;
             }
         }
 
@@ -134,7 +135,8 @@ namespace XicesBetterExperience
             foreach (TreeNodeRender node in parts)
             {
                 if (node == null) continue;
-                node.image.enabled = false;
+                graphics[node].enabled = false;
+                graphics.Remove(node);
                 UnityEngine.Object.Destroy(node.gameObject);
             }
         }
