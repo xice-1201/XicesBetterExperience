@@ -2,9 +2,10 @@
 <Mod>
   <ID>xice.betterexperience</ID>
   <Name>Xice的体验优化</Name>
-  <Author>Xice</Author>
+  <Author>Xice玄冰</Author>
   <ModVersion>0.3.8</ModVersion>
-  <Description>鉴定自动化、鉴定指南自动开关、储藏区命名显示、保留文档翻页、赃物及违禁品标记、电量告警、市场变动显示、单格价值、地下交易自动提货、鉴定回执自动清理。各功能可独立配置。</Description>
+  <Description>为游戏提供部分便利功能，可按需开启。
+GitHub：https://github.com/xice-1201/XicesBetterExperience</Description>
   <GameVersions>
     <Version>0.46D</Version>
   </GameVersions>
