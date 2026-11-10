@@ -6,27 +6,32 @@ namespace XicesBetterExperience
     [HarmonyPatch(typeof(GameItemElement), "GetTooltipBasic")]
     internal static class SingleCellValueTooltip
     {
-        [ThreadStatic]
-        private static GameItemElement currentItem;
+        internal sealed class Context { public GameItemElement Item; public string Expected, Replacement; public bool Prepared, Done; }
+        [ThreadStatic] private static Context current;
 
-        public static void Prefix(GameItemElement __instance)
+        public static void Prefix(GameItemElement __instance, out Context __state)
         {
-            currentItem = __instance;
+            __state = current;
+            current = ModEntry.IsEnabled && ExperienceSettings.SingleCellValue ? new Context { Item = __instance } : null;
         }
-
-        public static void Postfix()
-        {
-            currentItem = null;
-        }
+        public static Exception Finalizer(Exception __exception, Context __state) { current = __state; return __exception; }
 
         [HarmonyPatch(typeof(RichTextBuilder), "AddLine")]
         internal static class EstimateLinePatch
         {
             public static void Prefix(ref string text)
             {
-                GameItemElement item = currentItem;
-                if (item == null || !ModEntry.IsEnabled || !ExperienceSettings.SingleCellValue ||
-                    String.IsNullOrEmpty(text)) return;
+                Context context = current;
+                if (context == null || context.Done || String.IsNullOrEmpty(text)) return;
+                if (!context.Prepared) Prepare(context);
+                if (context.Expected == null || !String.Equals(text, context.Expected, StringComparison.Ordinal)) return;
+                text = context.Replacement;
+                context.Done = true;
+            }
+            private static void Prepare(Context context)
+            {
+                context.Prepared = true;
+                GameItemElement item = context.Item;
                 long totalEstimated = item.GetCurrentValue(false, true, true, false, 0L);
                 long baseValue = item.GetBaseValue();
                 string estimateMarker = "\u001eXICE_ESTIMATE\u001e";
@@ -43,8 +48,6 @@ namespace XicesBetterExperience
                 string middle = template.Substring(estimateIndex + estimateMarker.Length,
                     baseIndex - estimateIndex - estimateMarker.Length);
                 string suffix = middle + nativeBase + template.Substring(baseIndex + baseMarker.Length);
-                if (!String.Equals(text, prefix + suffix, StringComparison.Ordinal)) return;
-
                 // GridShape can be sparse (for example, pipe-shaped items).
                 // Count occupied cells from the native shape mask instead of
                 // multiplying its bounding-box dimensions.
@@ -55,7 +58,8 @@ namespace XicesBetterExperience
                 long selfEstimated = totalEstimated;
                 string valueLine = String.Format(ModHelper.GetLocalized(ModEntry.ModId,
                     "single_cell_value_line"), selfEstimated / Math.Max(1, cells));
-                text = prefix + valueLine + suffix;
+                context.Expected = prefix + suffix;
+                context.Replacement = prefix + valueLine + suffix;
             }
         }
     }

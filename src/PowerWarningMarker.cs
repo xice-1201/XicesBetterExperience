@@ -39,6 +39,13 @@ namespace XicesBetterExperience
             catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not refresh power warning: " + error); }
         }
 
+        private static void RefreshOnly(GameItem item)
+        {
+            var element = item as GameItemElement;
+            if (element == null) return;
+            try { RefreshElement(element); }
+            catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not refresh power warning: " + error); }
+        }
         private static void RefreshElement(GameItemElement item)
         {
             if (item.IsDestroyed() || item.handler == null) { Remove(item); return; }
@@ -113,9 +120,14 @@ namespace XicesBetterExperience
 
         public static void RefreshLoaded()
         {
-            foreach (GameItemElement item in new List<GameItemElement>(overlays.Keys)) Refresh(item);
-            if (!ModEntry.IsEnabled || !ExperienceSettings.PowerWarning || !PlayerStore.IsInstanceExist() || EmporiumEntry.Instance == null) return;
-            foreach (GameItem item in PlayerStore.Instance.FindAllItem(false)) Refresh(item);
+            RefreshLoaded(ModEntry.IsEnabled && PlayerStore.IsInstanceExist() && EmporiumEntry.Instance != null
+                ? PlayerStore.Instance.FindAllItem(false) : new List<GameItem>());
+        }
+        internal static void RefreshLoaded(IEnumerable<GameItem> snapshot)
+        {
+            var items = new HashSet<GameItem>(snapshot);
+            foreach (var item in overlays.Keys) items.Add(item);
+            foreach (var item in items) RefreshOnly(item);
         }
     }
 

@@ -29,7 +29,7 @@ public static class StorageCapacityRegression
         fridge.Owned = false; StorageCapacityOverlay.Refresh(fridge);
         Check(Nodes(fridge).Count == 0, "Non-player fridge capacity hidden");
         fridge.Owned = true; chill.inventoryShape.height = 4; freeze.inventoryShape.height = 4;
-        StorageCapacityResizePatch.Postfix(chill);
+        StorageCapacityResizePatch.Postfix(chill); UnityEngine.Canvas.Render();
         Check(Nodes(fridge)[1].text.text == "9.38%", "Fridge expansion updates combined capacity");
         StorageCapacityOverlay.Remove(fridge);
         var store = new GameItemElement { identifier = "storage_bay", Owned=true };
@@ -71,9 +71,17 @@ public static class StorageCapacityRegression
             StorageCapacityOverlay.Remove(machine);
         }
         contents.modifiedShape.maxX=0; contents.modifiedShape.maxY=0;
-        StorageCapacityAcceptPatch.Postfix(grid);
+        StorageCapacityAcceptPatch.Postfix(grid); UnityEngine.Canvas.Render();
         Check(nodes[1].text.text=="0.50%", "Inventory mutation refreshes owner immediately");
         grid.Expel(contents); StorageCapacityExpelPatch.Postfix(grid);
+        StorageCapacityExpelPatch.Postfix(grid); StorageCapacityAcceptPatch.Postfix(grid);
+        Check(UnityEngine.Canvas.Subscriptions == 1, "Inventory mutation burst shares one render batch");
+        // Visibility does not recount dirty data before the batch, avoiding repeated inventory walks.
+        int gridReads = grid.inventoryShape.Reads;
+        StorageCapacityDragPatch.Postfix(store);
+        Check(grid.inventoryShape.Reads == gridReads, "Visibility performs zero capacity grid reads");
+        Check(nodes[1].text.text == "0.50%", "Visibility reuses cached ratio");
+        UnityEngine.Canvas.Render();
         Check(nodes[1].text.text=="0.00%", "Removal updates percentage");
         store.background.image.enabled=false; store.fakeBackground.image.enabled=true;
         StorageCapacityDragPatch.Postfix(store);

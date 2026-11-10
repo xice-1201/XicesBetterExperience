@@ -12,6 +12,7 @@ namespace XicesBetterExperience
             new Dictionary<GameItemElement, TreeNodeRender>();
         private static readonly Dictionary<TreeNodeRender, MarkerGraphic> graphics = new Dictionary<TreeNodeRender, MarkerGraphic>();
         private static readonly HashSet<GameItemElement> machines = new HashSet<GameItemElement>();
+        private static readonly HashSet<GameItemElement> dirtyMachines = new HashSet<GameItemElement>();
         private static bool refreshQueued;
         private static int runningFarmCount = -1;
         private static bool farmCountDirty = true;
@@ -50,12 +51,17 @@ namespace XicesBetterExperience
                 // Do not use the native tooltip's time-based count cache: an
                 // insertion and removal in the same 0.5s window must be visible.
                 // Purifier-only mutations do not invalidate shared-air output.
-                if (farmCountDirty && new List<GameItemElement>(machines).Exists(item => item.identifier == "moisture_farm"))
+                bool refreshFarms = farmCountDirty;
+                if (refreshFarms)
                 {
-                    runningFarmCount = CountRunningFarms();
+                    runningFarmCount = new List<GameItemElement>(machines).Exists(item => item.identifier == "moisture_farm") ? CountRunningFarms() : 0;
                     farmCountDirty = false;
                 }
-                foreach (GameItemElement machine in new List<GameItemElement>(machines)) PowerWarningMarker.Refresh(machine);
+                var changed = new HashSet<GameItemElement>(dirtyMachines);
+                dirtyMachines.Clear();
+                if (refreshFarms) foreach (var machine in machines)
+                    if (machine.identifier == "moisture_farm") changed.Add(machine);
+                foreach (GameItemElement machine in changed) PowerWarningMarker.Refresh(machine);
             }
             catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not refresh changed machines: " + error); }
         }
@@ -66,7 +72,7 @@ namespace XicesBetterExperience
             if (IsSupported(item))
             {
                 GameItemElement machine = item as GameItemElement;
-                if (machine != null && !machine.IsDestroyed()) machines.Add(machine);
+                if (machine != null && !machine.IsDestroyed()) { machines.Add(machine); dirtyMachines.Add(machine); }
                 if (item.identifier == "moisture_farm") farmCountDirty = true;
                 QueueRefresh();
                 return;
@@ -278,6 +284,7 @@ namespace XicesBetterExperience
 
         public static void Remove(GameItemElement item)
         {
+            dirtyMachines.Remove(item);
             if (machines.Remove(item))
             {
                 if (item.identifier == "moisture_farm") farmCountDirty = true;
@@ -295,6 +302,7 @@ namespace XicesBetterExperience
         {
             foreach (GameItemElement item in new List<GameItemElement>(overlays.Keys)) Remove(item);
             machines.Clear();
+            dirtyMachines.Clear();
             CancelRefresh();
             runningFarmCount = -1;
             farmCountDirty = true;
@@ -302,12 +310,15 @@ namespace XicesBetterExperience
 
         public static void RefreshLoaded()
         {
-            CancelRefresh();
-            runningFarmCount = -1;
-            farmCountDirty = true;
-            foreach (GameItemElement item in new List<GameItemElement>(overlays.Keys)) Refresh(item);
-            if (!ModEntry.IsEnabled || !ExperienceSettings.OverflowWarning || !PlayerStore.IsInstanceExist() || EmporiumEntry.Instance == null) return;
-            foreach (GameItem item in PlayerStore.Instance.FindAllItem(false)) Refresh(item);
+            RefreshLoaded(ModEntry.IsEnabled && PlayerStore.IsInstanceExist() && EmporiumEntry.Instance != null
+                ? PlayerStore.Instance.FindAllItem(false) : new List<GameItem>());
+        }
+        internal static void RefreshLoaded(IEnumerable<GameItem> snapshot)
+        {
+            CancelRefresh(); runningFarmCount = -1; farmCountDirty = true;
+            var items = new HashSet<GameItem>(snapshot);
+            foreach (var item in overlays.Keys) items.Add(item);
+            foreach (var item in items) Refresh(item);
         }
 
         // Liquid mutations notify the owning machine without an inventory scan.
@@ -322,13 +333,9 @@ namespace XicesBetterExperience
             catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not refresh overflow warning after liquid change: " + error); }
         }
 
-        [HarmonyPatch(typeof(GameItemElement), "ValidateSelect", new[] { typeof(bool) })]
         public static class ValidatePatch { public static void Postfix(GameItemElement __instance) { Refresh(__instance); } }
-        [HarmonyPatch(typeof(GameItemElement), "ToggleBackground", new[] { typeof(bool), typeof(float), typeof(float) })]
         public static class VisibilityPatch { public static void Postfix(GameItemElement __instance) { Refresh(__instance); } }
-        [HarmonyPatch(typeof(GameItemElement), "ToggleFakeBackground", new[] { typeof(bool), typeof(Vector4) })]
         public static class DragPatch { public static void Postfix(GameItemElement __instance) { Refresh(__instance); } }
-        [HarmonyPatch(typeof(GameItemElement), "UpdateRectTransform", new Type[] { })]
         public static class RotationPatch { public static void Postfix(GameItemElement __instance) { Refresh(__instance); } }
         [HarmonyPatch(typeof(GameItemElement), "Destroy", new Type[] { })]
         public static class DestroyPatch { public static void Prefix(GameItemElement __instance) { Remove(__instance); } }

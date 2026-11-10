@@ -97,6 +97,9 @@ public static class MarketChangeRegression
         ModConfig.Instance.MarketChangeEntry.Set(false); ModHook.Apply(ModEntry.ModId);
         Check(Nodes(neutral).TrueForAll(node => !StatusTest.Graphic(node).enabled), "Config disables market change markers");
         Check(Nodes(unowned).TrueForAll(node => !StatusTest.Graphic(node).enabled), "Config also disables non-player markers");
+        int reads = CommissaryData.ModifierReads;
+        for (int i = 0; i < 100; i++) MarketChangeMarker.Refresh(unowned);
+        Check(CommissaryData.ModifierReads == reads, "Disabled market feature never reads market modifiers");
         MarketChangeDestroyPatch.Prefix(neutral);
         Check(Nodes(neutral).Count == 0, "Destroy cleans market change markers");
         entry.OnDisable();

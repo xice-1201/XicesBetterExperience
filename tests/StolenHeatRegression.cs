@@ -25,7 +25,7 @@ public static class StolenHeatRegression
         entry.OnEnable();
         var item = new GameItemElement();
         item.Tags.Add("STOLEN_TAG"); item.IntTags["STOLEN_VALUE_INT"] = 24;
-        StolenHeatValidatePatch.Postfix(item);
+        StatusBackgroundValidatePatch.Postfix(item);
         var nodes = StatusTest.Nodes(item);
         StatusTest.Check(nodes.Count == 2, "One shared background for normal and drag paths");
         foreach (var n in nodes)
@@ -36,10 +36,10 @@ public static class StolenHeatRegression
             StatusTest.Check(g.Triangles.TrueForAll(t => t.Color.g > 0.8f && t.Color.a == 0.25f), "Stolen background is translucent yellow");
             StatusTest.Check(StatusTest.Area(g.Triangles) == 48*48, "Background covers exactly occupied cell");
         }
-        StolenHeatValidatePatch.Postfix(item);
+        StatusBackgroundValidatePatch.Postfix(item);
         StatusTest.Check(StatusTest.Nodes(item).Count == 2, "No duplicate backgrounds");
         int updates = StatusTest.Graphic(nodes[0]).GeometryUpdates;
-        for (int i = 0; i < 100; i++) StolenHeatValidatePatch.Postfix(item);
+        for (int i = 0; i < 100; i++) StatusBackgroundValidatePatch.Postfix(item);
         StatusTest.Check(StatusTest.Graphic(nodes[0]).GeometryUpdates == updates && StatusTest.Nodes(item).Count == 2,
             "Repeated inventory refresh neither creates nodes nor dirties unchanged meshes");
         item.IntTags["STOLEN_VALUE_INT"] = 0; StolenHeatSetPatch.Postfix(item);
@@ -50,16 +50,16 @@ public static class StolenHeatRegression
         ModConfig.Instance.StolenEntry.Set(true); ModHook.Apply(ModEntry.ModId);
         StatusTest.Check(StatusTest.Graphic(nodes[0]).enabled, "Setting restores existing background");
         item.background.image.enabled = false; item.fakeBackground.image.enabled = true;
-        StolenHeatDragPatch.Postfix(item);
+        StatusBackgroundDragPatch.Postfix(item);
         StatusTest.Check(nodes.TrueForAll(n => StatusTest.Graphic(n).enabled == (n.parent == item.fakeMiddle)), "Drag visibility follows native sprite");
         item.modifiedShape.minX=2; item.modifiedShape.minY=3;
         item.modifiedShape.maxX=3; item.modifiedShape.maxY=4;
         item.modifiedShape.Empty.Add("3,4");
-        StolenHeatRotationPatch.Postfix(item);
+        StatusBackgroundRotationPatch.Postfix(item);
         StatusTest.Check(StatusTest.Area(StatusTest.Graphic(nodes[0]).Triangles) == 3*48*48, "Nonrectangular and shifted shapes leave empty cells uncolored");
         item.Tags.Remove("STOLEN_TAG"); StolenHeatDecayPatch.Postfix(item);
         StatusTest.Check(nodes.TrueForAll(n => !StatusTest.Graphic(n).enabled), "Removed stolen status hides background");
-        StolenHeatDestroyPatch.Prefix(item);
+        StatusBackgroundDestroyPatch.Prefix(item);
         StatusTest.Check(StatusTest.Nodes(item).Count == 0, "Destruction cleans background");
         entry.OnDisable();
         Console.WriteLine("PASS: translucent stolen backgrounds, occupied shapes, native visibility, settings and cleanup.");

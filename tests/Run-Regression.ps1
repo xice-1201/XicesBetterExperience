@@ -68,3 +68,14 @@ $augArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' 
 if ($LASTEXITCODE -ne 0) { throw 'Aug identification regression compilation failed.' }
 & $augExe
 if ($LASTEXITCODE -ne 0) { throw 'Aug identification regression failed.' }
+
+$valueExe = Join-Path $outputPath 'SingleCellValueRegression.exe'
+$valueArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $valueExe),
+    ('/reference:' + (Join-Path $frameworkPath 'mscorlib.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.dll')),
+    (Join-Path $projectRoot 'src/SingleCellValue.cs'),
+    (Join-Path $PSScriptRoot 'SingleCellValueRegression.cs'))
+& (Join-Path $UnityEditorPath 'Data/NetCoreRuntime/dotnet.exe') (Join-Path $UnityEditorPath 'Data/DotNetSdkRoslyn/csc.dll') @valueArguments
+if ($LASTEXITCODE -ne 0) { throw 'Single cell value regression compilation failed.' }
+& $valueExe
+if ($LASTEXITCODE -ne 0) { throw 'Single cell value regression failed.' }

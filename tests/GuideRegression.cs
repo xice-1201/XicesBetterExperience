@@ -126,8 +126,9 @@ public class StoreEventManager
 }
 public static class CommissaryData
 {
+    public static int ModifierReads;
     public static readonly Dictionary<string, int> Modifiers = new Dictionary<string, int>();
-    public static int GetTotalTypeMarketPriceModifier(string type) { return Modifiers.ContainsKey(type) ? Modifiers[type] : 0; }
+    public static int GetTotalTypeMarketPriceModifier(string type) { ModifierReads++; return Modifiers.ContainsKey(type) ? Modifiers[type] : 0; }
 }
 public static class UISettings
 {
@@ -188,6 +189,7 @@ public class PlayerStore
     public TestClient currentClientInstance;
     public static PlayerStore Instance;
     public readonly List<GameItem> Items = new List<GameItem>();
+    public int InventoryScans;
     public bool Fail;
     public ExchangeManager exchangeManager = new ExchangeManager();
     public void AddDirectSellingItemToTable(GameItem item, bool a, bool b, bool c, int d)
@@ -199,6 +201,7 @@ public class PlayerStore
     public static bool IsInstanceExist() { return Instance != null; }
     public List<GameItem> FindAllItem(bool isOwn = true)
     {
+        InventoryScans++;
         if (Fail) throw new InvalidOperationException("Simulated inventory failure");
         // Deliberately return unowned entries too, verifying the explicit ownership check.
         return Items;
@@ -256,9 +259,10 @@ public class GameInventory : GraphNodeStorage
 }
 public class TestInventoryShape
 {
+    public int Reads;
     public int width=10, height=10;
     public readonly HashSet<string> Blocked = new HashSet<string>();
-    public int Get(int x, int y) { return Blocked.Contains(x + "," + y) ? 1 : 0; }
+    public int Get(int x, int y) { Reads++; return Blocked.Contains(x + "," + y) ? 1 : 0; }
 }
 public class GameGridInventory : GameInventory
 {

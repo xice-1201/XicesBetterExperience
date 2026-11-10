@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using HarmonyLib;
 
 namespace XicesBetterExperience
 {
@@ -17,7 +18,7 @@ namespace XicesBetterExperience
                 Graphic = MarkerGraphic.Attach(Node);
             }
         }
-        private sealed class Overlay { public Layer Normal, Drag; }
+        private sealed class Overlay { public Layer Normal, Drag; public int[] ShapeMask; public int ShapeWidth, ShapeHeight; public float Grid; public bool Stolen, Contraband; public bool HasGeometry; }
         private static readonly Dictionary<GameItemElement, Overlay> overlays = new Dictionary<GameItemElement, Overlay>();
         private static readonly Color yellow = new Color(1f, 0.82f, 0.08f, 0.25f);
         private static readonly Color red = new Color(1f, 0.12f, 0.12f, 0.25f);
@@ -42,13 +43,34 @@ namespace XicesBetterExperience
                 overlay = new Overlay { Normal = new Layer(item.middle), Drag = new Layer(item.fakeMiddle) };
                 overlays.Add(item, overlay);
             }
-            List<MarkerTriangle> triangles = Build(item, stolen, contraband);
+            float grid = UISettings.current.gridSize;
+            var shape = item.modifiedShape;
+            int width = shape.maxX - shape.minX + 1, height = shape.maxY - shape.minY + 1;
+            bool shapeChanged = !overlay.HasGeometry || overlay.ShapeWidth != width || overlay.ShapeHeight != height || overlay.ShapeMask == null;
+            if (!shapeChanged)
+            {
+                int maskIndex = 0;
+                for (int y = shape.minY; y <= shape.maxY && !shapeChanged; y++)
+                    for (int x = shape.minX; x <= shape.maxX; x++, maskIndex++)
+                        if (overlay.ShapeMask[maskIndex] != shape.Get(x, y)) { shapeChanged = true; break; }
+            }
+            bool rebuild = shapeChanged || overlay.Grid != grid || overlay.Stolen != stolen || overlay.Contraband != contraband;
+            List<MarkerTriangle> triangles = rebuild ? Build(item, stolen, contraband) : null;
+            if (rebuild)
+            {
+                overlay.ShapeWidth = width; overlay.ShapeHeight = height;
+                overlay.ShapeMask = new int[width * height];
+                int maskIndex = 0;
+                for (int y = shape.minY; y <= shape.maxY; y++)
+                    for (int x = shape.minX; x <= shape.maxX; x++) overlay.ShapeMask[maskIndex++] = shape.Get(x, y);
+                overlay.Grid = grid; overlay.Stolen = stolen; overlay.Contraband = contraband; overlay.HasGeometry = true;
+            }
             Vector2 size = new Vector2((item.modifiedShape.maxX - item.modifiedShape.minX + 1) * UISettings.current.gridSize,
                 (item.modifiedShape.maxY - item.modifiedShape.minY + 1) * UISettings.current.gridSize);
             overlay.Normal.Node.rectTransform.sizeDelta = size;
             overlay.Drag.Node.rectTransform.sizeDelta = size;
-            Set(overlay.Normal, triangles, item.background.image.enabled);
-            Set(overlay.Drag, triangles, item.fakeBackground.image.enabled);
+            Set(overlay.Normal, triangles, item.background.image.enabled, rebuild);
+            Set(overlay.Drag, triangles, item.fakeBackground.image.enabled, rebuild);
         }
 
         internal static List<MarkerTriangle> Build(GameItemElement item, bool stolen, bool contraband)
@@ -106,11 +128,11 @@ namespace XicesBetterExperience
                     new Vector2(polygon[i].x, -polygon[i].y), new Vector2(polygon[i + 1].x, -polygon[i + 1].y), color));
         }
 
-        private static void Set(Layer layer, List<MarkerTriangle> triangles, bool visible)
+        private static void Set(Layer layer, List<MarkerTriangle> triangles, bool visible, bool rebuild)
         {
             layer.Node.rectTransform.SetAsFirstSibling();
-            layer.Graphic.UpdateGeometry(triangles);
-            layer.Graphic.enabled = visible && triangles.Count > 0;
+            if (rebuild) layer.Graphic.UpdateGeometry(triangles);
+            layer.Graphic.enabled = visible && (rebuild ? triangles.Count > 0 : layer.Graphic.Triangles.Count > 0);
         }
 
         public static void Remove(GameItemElement item)
@@ -127,9 +149,25 @@ namespace XicesBetterExperience
         public static void Clear() { foreach (var item in new List<GameItemElement>(overlays.Keys)) Remove(item); }
         public static void RefreshLoaded()
         {
-            foreach (var item in new List<GameItemElement>(overlays.Keys)) Refresh(item);
-            if (!ModEntry.IsEnabled || !PlayerStore.IsInstanceExist() || EmporiumEntry.Instance == null) return;
-            foreach (GameItem item in PlayerStore.Instance.FindAllItem(false)) Refresh(item);
+            RefreshLoaded(ModEntry.IsEnabled && PlayerStore.IsInstanceExist() && EmporiumEntry.Instance != null
+                ? PlayerStore.Instance.FindAllItem(false) : new List<GameItem>());
+        }
+        internal static void RefreshLoaded(IEnumerable<GameItem> snapshot)
+        {
+            var items = new HashSet<GameItem>(snapshot);
+            foreach (var item in overlays.Keys) items.Add(item);
+            foreach (var item in items) Refresh(item);
         }
     }
+    [HarmonyPatch(typeof(GameItemElement), "ValidateSelect", new[] { typeof(bool) })]
+    public static class StatusBackgroundValidatePatch { public static void Postfix(GameItemElement __instance) { ItemStatusBackground.Refresh(__instance); } }
+    [HarmonyPatch(typeof(GameItemElement), "ToggleBackground", new[] { typeof(bool), typeof(float), typeof(float) })]
+    public static class StatusBackgroundVisibilityPatch { public static void Postfix(GameItemElement __instance) { ItemStatusBackground.Refresh(__instance); } }
+    [HarmonyPatch(typeof(GameItemElement), "ToggleFakeBackground", new[] { typeof(bool), typeof(Vector4) })]
+    public static class StatusBackgroundDragPatch { public static void Postfix(GameItemElement __instance) { ItemStatusBackground.Refresh(__instance); } }
+    [HarmonyPatch(typeof(GameItemElement), "UpdateRectTransform", new Type[] { })]
+    public static class StatusBackgroundRotationPatch { public static void Postfix(GameItemElement __instance) { ItemStatusBackground.Refresh(__instance); } }
+    [HarmonyPatch(typeof(GameItemElement), "Destroy", new Type[] { })]
+    public static class StatusBackgroundDestroyPatch { public static void Prefix(GameItemElement __instance) { ItemStatusBackground.Remove(__instance); } }
+
 }
