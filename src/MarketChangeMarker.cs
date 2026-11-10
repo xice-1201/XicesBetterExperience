@@ -11,6 +11,7 @@ namespace XicesBetterExperience
         {
             public TreeNodeRender[] Normal;
             public TreeNodeRender[] Drag;
+            public float Size; public int Direction;
         }
 
         private static readonly Dictionary<GameItemElement, Overlay> overlays =
@@ -54,6 +55,7 @@ namespace XicesBetterExperience
         private static void RefreshElement(GameItemElement item)
         {
             if (item.IsDestroyed() || item.handler == null) { Remove(item); return; }
+            if (!ModEntry.IsEnabled || !ExperienceSettings.MarketChangeMarker) { Remove(item); return; }
             int modifier = GetNetMarketModifier(item);
             Overlay overlay;
             bool active = ModEntry.IsEnabled && ExperienceSettings.MarketChangeMarker &&
@@ -64,8 +66,16 @@ namespace XicesBetterExperience
                 overlay = new Overlay { Normal = Create(item.middle), Drag = Create(item.fakeMiddle) };
                 overlays.Add(item, overlay);
             }
-            Set(overlay.Normal, item.background.image.enabled && active, modifier);
-            Set(overlay.Drag, item.fakeBackground.image.enabled && active, modifier);
+            float size = UISettings.current == null ? 24f : UISettings.current.gridSize * 0.5f;
+            int direction = Math.Sign(modifier);
+            List<MarkerTriangle> geometry = null;
+            if (active && (overlay.Size != size || overlay.Direction != direction))
+            {
+                geometry = GetArrow(size, direction > 0);
+                overlay.Size = size; overlay.Direction = direction;
+            }
+            Set(overlay.Normal, item.background.image.enabled && active, size, geometry);
+            Set(overlay.Drag, item.fakeBackground.image.enabled && active, size, geometry);
         }
 
         private static readonly Dictionary<TreeNodeRender, MarkerGraphic> graphics = new Dictionary<TreeNodeRender, MarkerGraphic>();
@@ -106,16 +116,24 @@ namespace XicesBetterExperience
             target.Add(new MarkerTriangle(points[2], points[4], points[5], color));
         }
 
-        private static void Set(TreeNodeRender[] parts, bool visible, int modifier)
+        private static float cachedSize = -1f;
+        private static List<MarkerTriangle> upArrow, downArrow;
+        private static List<MarkerTriangle> GetArrow(float size, bool up)
         {
-            float size = UISettings.current == null ? 24f : UISettings.current.gridSize * 0.5f;
+            if (cachedSize != size) { cachedSize = size; upArrow = null; downArrow = null; }
+            if (up) return upArrow ?? (upArrow = BuildArrow(size, true));
+            return downArrow ?? (downArrow = BuildArrow(size, false));
+        }
+
+        private static void Set(TreeNodeRender[] parts, bool visible, float size, List<MarkerTriangle> geometry)
+        {
             foreach (TreeNodeRender node in parts)
             {
                 node.rectTransform.SetAsLastSibling();
                 node.rectTransform.sizeDelta = new Vector2(size, size);
                 node.rectTransform.anchoredPosition = new Vector2(1f, -1f);
                 MarkerGraphic graphic = graphics[node];
-                graphic.UpdateGeometry(BuildArrow(size, modifier > 0));
+                if (geometry != null) graphic.UpdateGeometry(geometry);
                 graphic.enabled = visible;
             }
         }
@@ -148,10 +166,14 @@ namespace XicesBetterExperience
 
         public static void RefreshLoaded()
         {
-            foreach (GameItemElement item in new List<GameItemElement>(overlays.Keys)) Refresh(item);
-            if (!ModEntry.IsEnabled || !ExperienceSettings.MarketChangeMarker ||
-                !PlayerStore.IsInstanceExist() || EmporiumEntry.Instance == null) return;
-            foreach (GameItem item in PlayerStore.Instance.FindAllItem(false)) Refresh(item);
+            RefreshLoaded(ModEntry.IsEnabled && PlayerStore.IsInstanceExist() && EmporiumEntry.Instance != null
+                ? PlayerStore.Instance.FindAllItem(false) : new List<GameItem>());
+        }
+        internal static void RefreshLoaded(IEnumerable<GameItem> snapshot)
+        {
+            var items = new HashSet<GameItem>(snapshot);
+            foreach (var item in overlays.Keys) items.Add(item);
+            foreach (var item in items) Refresh(item);
         }
     }
 

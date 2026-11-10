@@ -11,10 +11,20 @@ namespace XicesBetterExperience
         private sealed class Overlay
         {
             public TreeNodeRender Normal, Shadow, Drag, DragShadow;
+            public double? Ratio; public bool HasRatio;
         }
 
         private static readonly Dictionary<GameItemElement, Overlay> overlays = new Dictionary<GameItemElement, Overlay>();
 
+        private static readonly HashSet<GameItemElement> dirty = new HashSet<GameItemElement>();
+        private static bool queued;
+        private static void Flush()
+        {
+            Canvas.willRenderCanvases -= Flush; queued = false;
+            var changed = new List<GameItemElement>(dirty);
+            dirty.Clear();
+            foreach (var item in changed) { Overlay overlay; if (overlays.TryGetValue(item, out overlay)) overlay.HasRatio = false; Refresh(item); }
+        }
         internal static double? GetRatio(GameItem item)
         {
             long capacity = 0, occupied = 0;
@@ -62,7 +72,12 @@ namespace XicesBetterExperience
         {
             if (inventory == null || !ModEntry.IsEnabled || !ExperienceSettings.StorageCapacity) return;
             foreach (GameItem owner in GraphUtils.FindParentsType<GameItem>(inventory))
-                if (StorageNameOverlay.IsStorage(owner)) Refresh(owner);
+                if (StorageNameOverlay.IsStorage(owner))
+                {
+                    var element = owner as GameItemElement;
+                    if (element != null) dirty.Add(element);
+                }
+            if (dirty.Count > 0 && !queued) { queued = true; Canvas.willRenderCanvases += Flush; }
         }
 
         public static void Refresh(GameItem item)
@@ -81,14 +96,15 @@ namespace XicesBetterExperience
             if (item.IsDestroyed() || item.handler == null) { Remove(item); return; }
             if (!ModEntry.IsEnabled || !ExperienceSettings.StorageCapacity || item.isDebugMenu ||
                 !StorageNameOverlay.IsStorage(item) || !GeneralHelper.IsItemOwned(item)) { Remove(item); return; }
-            double? ratio = GetRatio(item);
+            Overlay overlay;
+            if (!overlays.TryGetValue(item, out overlay)) overlay = new Overlay();
+            if (!overlay.HasRatio) { overlay.Ratio = GetRatio(item); overlay.HasRatio = true; }
+            double? ratio = overlay.Ratio;
             if (!ratio.HasValue) { Remove(item); return; }
             string name = (ratio.Value * 100d).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + "%";
             Color color = RatioColor(ratio.Value);
-            Overlay overlay;
-            if (!overlays.TryGetValue(item, out overlay))
+            if (!overlays.ContainsKey(item))
             {
-                overlay = new Overlay();
                 // Register first so partial creation is still cleaned up on disable/destroy.
                 overlays.Add(item, overlay);
                 overlay.Shadow = Create(item.middle, true);
@@ -151,23 +167,29 @@ namespace XicesBetterExperience
 
         public static void Clear()
         {
+            Canvas.willRenderCanvases -= Flush; queued = false; dirty.Clear();
             foreach (GameItemElement item in new List<GameItemElement>(overlays.Keys)) Remove(item);
         }
 
         public static void RefreshLoaded()
         {
-            foreach (GameItemElement item in new List<GameItemElement>(overlays.Keys)) Refresh(item);
-            if (!ModEntry.IsEnabled || !ExperienceSettings.StorageCapacity ||
-                !PlayerStore.IsInstanceExist() || EmporiumEntry.Instance == null) return;
-            foreach (GameItem item in PlayerStore.Instance.FindAllItem(false))
-                if (StorageNameOverlay.IsStorage(item)) Refresh(item);
+            RefreshLoaded(ModEntry.IsEnabled && PlayerStore.IsInstanceExist() && EmporiumEntry.Instance != null
+                ? PlayerStore.Instance.FindAllItem(false) : new List<GameItem>());
+        }
+        internal static void RefreshLoaded(IEnumerable<GameItem> snapshot)
+        {
+            foreach (var overlay in overlays.Values) overlay.HasRatio = false;
+            foreach (var overlay in overlays.Values) overlay.HasRatio = false;
+            var items = new HashSet<GameItem>(snapshot);
+            foreach (var item in overlays.Keys) items.Add(item);
+            foreach (var item in items) Refresh(item);
         }
     }
 
     [HarmonyPatch(typeof(GameItemElement), "ValidateSelect", new[] { typeof(bool) })]
     public static class StorageCapacityValidatePatch
     {
-        public static void Postfix(GameItemElement __instance) { StorageCapacityOverlay.Refresh(__instance); StorageCapacityOverlay.RefreshInventory(__instance.parentInventory); }
+        public static void Postfix(GameItemElement __instance) { StorageCapacityOverlay.Refresh(__instance); }
     }
 
     [HarmonyPatch(typeof(GeneralHelper), "SetCustomName", new[] { typeof(GameItem), typeof(string) })]
@@ -211,5 +233,12 @@ namespace XicesBetterExperience
     [HarmonyPatch(typeof(GameGridInventory), "SetShape", new[] { typeof(string), typeof(int) })]
     public static class StorageCapacityReshapePatch
     { public static void Postfix(GameGridInventory __instance) { StorageCapacityOverlay.RefreshInventory(__instance); } }
+
+    [HarmonyPatch(typeof(GameItem), "ValidateShapeState", new Type[] { })]
+    public static class StorageCapacityItemShapePatch
+    { public static void Postfix(GameItem __instance) { StorageCapacityOverlay.RefreshInventory(__instance.parentInventory); } }
+    [HarmonyPatch(typeof(GameItem), "SyncModifiedState", new Type[] { })]
+    public static class StorageCapacityItemSyncPatch
+    { public static void Postfix(GameItem __instance) { StorageCapacityOverlay.RefreshInventory(__instance.parentInventory); } }
 
 }

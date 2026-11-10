@@ -185,7 +185,13 @@ public static class StorageNamingRegression
         entry.OnEnable();
         Check(Nodes(loaded).Count == 4, "Enable restores overlay without reload");
         int createdBefore = TreeNodeRender.Created.Count;
-        entry.OnEnable(); ModHook.Load();
+        entry.OnEnable();
+        int scanBefore = PlayerStore.Instance.InventoryScans;
+        ModHook.Load();
+        Check(PlayerStore.Instance.InventoryScans == scanBefore + 1, "Load shares exactly one inventory snapshot");
+        scanBefore = PlayerStore.Instance.InventoryScans;
+        ModHook.Apply(ModEntry.ModId);
+        Check(PlayerStore.Instance.InventoryScans == scanBefore, "Unchanged settings do not enumerate inventory");
         Check(TreeNodeRender.Created.Count == createdBefore, "Repeated enable/load is idempotent");
         StorageNameDestroyPatch.Prefix(loaded); loaded.Destroy();
         Check(Nodes(loaded).Count == 0, "Item destruction removes overlay");

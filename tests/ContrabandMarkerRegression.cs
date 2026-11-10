@@ -7,7 +7,7 @@ public static class ContrabandMarkerRegression
     {
         entry.OnEnable();
         var item = new GameItemElement(); item.Tags.Add("CONTRABAND_LEVEL_HIGH");
-        ContrabandValidatePatch.Postfix(item);
+        StatusBackgroundValidatePatch.Postfix(item);
         var nodes = StatusTest.Nodes(item);
         StatusTest.Check(nodes.Count == 2, "Contraband uses one background pair");
         var mesh = StatusTest.Graphic(nodes[0]).Triangles;
@@ -31,7 +31,7 @@ public static class ContrabandMarkerRegression
         StatusTest.Check(StatusTest.Graphic(nodes[0]).Triangles.TrueForAll(t => t.Color.g > 0.8f), "Removing contraband restores full yellow background");
         item.Tags.Remove("STOLEN_TAG"); StolenHeatRemoveStatusPatch.Postfix(item);
         StatusTest.Check(nodes.TrueForAll(n => !StatusTest.Graphic(n).enabled), "Removing both hides background");
-        ContrabandDestroyPatch.Prefix(item);
+        StatusBackgroundDestroyPatch.Prefix(item);
         StatusTest.Check(StatusTest.Nodes(item).Count == 0, "Shared background cleanup is idempotent");
         entry.OnDisable();
         Console.WriteLine("PASS: contraband background, diagonal partition, independent settings and removal transitions.");

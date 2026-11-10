@@ -29,8 +29,9 @@ public static class MachineMoistureFarm
 
 public static class WaterHelper
 {
+    public static int PurityReads;
     public static int GetFreeCapacity(GameItem item) { return item.IntTags["free"]; }
-    public static int GetWaterPurity(GameItem item) { return item.IntTags.ContainsKey("purity") ? item.IntTags["purity"] : 0; }
+    public static int GetWaterPurity(GameItem item) { PurityReads++; return item.IntTags.ContainsKey("purity") ? item.IntTags["purity"] : 0; }
 }
 
 public static class MachinePurifier
@@ -274,6 +275,15 @@ public static class OverflowWarningRegression
         Check(!Visible(purifier), "Purifier respects overflow setting");
         ModConfig.Instance.OverflowWarningEntry.Set(true); ModHook.Apply(ModEntry.ModId);
         Check(Visible(purifier), "Purifier warning returns after enabling setting");
+        UnityEngine.Canvas.Render();
+        var otherPurifier = new GameItemElement { Owned = true, identifier = "water_purifier" };
+        var otherOutput = new GameItemElement(); otherOutput.IntTags["purity"] = 10000;
+        MachineHelper.WaterSlots[otherPurifier] = new GameSlotInventory { ParentItem = otherPurifier, childItem = otherOutput };
+        OverflowWarningMarker.Refresh(otherPurifier); UnityEngine.Canvas.Render();
+        int purityReads = WaterHelper.PurityReads;
+        OverflowWarningMarker.NotifyChanged(purifier); OverflowWarningMarker.NotifyChanged(purifier);
+        UnityEngine.Canvas.Render();
+        Check(WaterHelper.PurityReads == purityReads + 1, "Purifier mutation evaluates only the changed machine once");
         entry.OnDisable(); Check(Nodes(purifier).Count == 0, "Disable cleans purifier overlay");
         Console.WriteLine("PASS: purifier purity thresholds at all quality tiers, empty/unowned exclusions, event refresh, power priority and zero farm scans.");
     }

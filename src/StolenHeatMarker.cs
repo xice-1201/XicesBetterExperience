@@ -13,36 +13,6 @@ namespace XicesBetterExperience
         public static void RefreshLoaded() { ItemStatusBackground.RefreshLoaded(); }
     }
 
-    [HarmonyPatch(typeof(GameItemElement), "ValidateSelect", new[] { typeof(bool) })]
-    public static class StolenHeatValidatePatch
-    {
-        public static void Postfix(GameItemElement __instance) { StolenHeatMarker.Refresh(__instance); }
-    }
-
-    [HarmonyPatch(typeof(GameItemElement), "ToggleBackground", new[] { typeof(bool), typeof(float), typeof(float) })]
-    public static class StolenHeatVisibilityPatch
-    {
-        public static void Postfix(GameItemElement __instance) { StolenHeatMarker.Refresh(__instance); }
-    }
-
-    [HarmonyPatch(typeof(GameItemElement), "ToggleFakeBackground", new[] { typeof(bool), typeof(Vector4) })]
-    public static class StolenHeatDragPatch
-    {
-        public static void Postfix(GameItemElement __instance) { StolenHeatMarker.Refresh(__instance); }
-    }
-
-    [HarmonyPatch(typeof(GameItemElement), "UpdateRectTransform", new Type[] { })]
-    public static class StolenHeatRotationPatch
-    {
-        public static void Postfix(GameItemElement __instance) { StolenHeatMarker.Refresh(__instance); }
-    }
-
-    [HarmonyPatch(typeof(GameItemElement), "Destroy", new Type[] { })]
-    public static class StolenHeatDestroyPatch
-    {
-        public static void Prefix(GameItemElement __instance) { StolenHeatMarker.Remove(__instance); }
-    }
-
     [HarmonyPatch(typeof(StolenHelper), "SetHeat", new[] { typeof(GameItem), typeof(int) })]
     public static class StolenHeatSetPatch
     {

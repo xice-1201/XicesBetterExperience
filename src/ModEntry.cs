@@ -28,21 +28,9 @@ namespace XicesBetterExperience
             if (IsEnabled) return;
             IsEnabled = true;
             ModHook.OnGameLoadedLate += AugIdentificationAutomation.Clear;
-            ModHook.OnGameLoadedLate += StorageNameOverlay.RefreshLoaded;
-            ModHook.OnGameLoadedLate += StorageCapacityOverlay.RefreshLoaded;
-            ModHook.OnGameLoadedLate += StolenHeatMarker.RefreshLoaded;
-            ModHook.OnGameLoadedLate += ContrabandMarker.RefreshLoaded;
-            ModHook.OnGameLoadedLate += PowerWarningMarker.RefreshLoaded;
-            ModHook.OnGameLoadedLate += OverflowWarningMarker.RefreshLoaded;
-            ModHook.OnGameLoadedLate += MarketChangeMarker.RefreshLoaded;
+            ModHook.OnGameLoadedLate += RefreshLoaded;
             ModHook.OnModConfigApplied += OnConfigApplied;
-            StorageNameOverlay.RefreshLoaded();
-            StorageCapacityOverlay.RefreshLoaded();
-            StolenHeatMarker.RefreshLoaded();
-            ContrabandMarker.RefreshLoaded();
-            PowerWarningMarker.RefreshLoaded();
-            OverflowWarningMarker.RefreshLoaded();
-            MarketChangeMarker.RefreshLoaded();
+            RefreshLoaded();
         }
 
         public void OnDisable()
@@ -53,18 +41,11 @@ namespace XicesBetterExperience
             AugIdentificationAutomation.Clear();
             InjectorInspectionAutomation.Restore();
             ModHook.OnGameLoadedLate -= AugIdentificationAutomation.Clear;
-            ModHook.OnGameLoadedLate -= StorageNameOverlay.RefreshLoaded;
-            ModHook.OnGameLoadedLate -= StorageCapacityOverlay.RefreshLoaded;
-            ModHook.OnGameLoadedLate -= StolenHeatMarker.RefreshLoaded;
-            ModHook.OnGameLoadedLate -= ContrabandMarker.RefreshLoaded;
-            ModHook.OnGameLoadedLate -= PowerWarningMarker.RefreshLoaded;
-            ModHook.OnGameLoadedLate -= OverflowWarningMarker.RefreshLoaded;
-            ModHook.OnGameLoadedLate -= MarketChangeMarker.RefreshLoaded;
+            ModHook.OnGameLoadedLate -= RefreshLoaded;
             ModHook.OnModConfigApplied -= OnConfigApplied;
             StorageNameOverlay.Clear();
             StorageCapacityOverlay.Clear();
-            StolenHeatMarker.Clear();
-            ContrabandMarker.Clear();
+            ItemStatusBackground.Clear();
             PowerWarningMarker.Clear();
             OverflowWarningMarker.Clear();
             MarketChangeMarker.Clear();
@@ -81,13 +62,29 @@ namespace XicesBetterExperience
             if (modId != ModId || !IsEnabled) return;
             WindowLayoutMemory.ConfigApplied();
             AugIdentificationAutomation.ConfigApplied();
-            StorageNameOverlay.RefreshLoaded();
-            StorageCapacityOverlay.RefreshLoaded();
-            StolenHeatMarker.RefreshLoaded();
-            ContrabandMarker.RefreshLoaded();
-            PowerWarningMarker.RefreshLoaded();
-            OverflowWarningMarker.RefreshLoaded();
-            MarketChangeMarker.RefreshLoaded();
+            RefreshVisuals(false);
         }
+        private static bool[] lastVisualSettings;
+        private static void RefreshLoaded() { RefreshVisuals(true); }
+        private static void RefreshVisuals(bool force)
+        {
+            bool[] settings = { ExperienceSettings.StorageNaming, ExperienceSettings.StorageCapacity,
+                ExperienceSettings.StolenMarker, ExperienceSettings.ContrabandMarker,
+                ExperienceSettings.PowerWarning, ExperienceSettings.OverflowWarning, ExperienceSettings.MarketChangeMarker };
+            bool[] changed = new bool[settings.Length];
+            bool any = false;
+            for (int i = 0; i < settings.Length; i++) { changed[i] = force || lastVisualSettings == null || settings[i] != lastVisualSettings[i]; any |= changed[i]; }
+            lastVisualSettings = settings;
+            if (!any) return;
+            var snapshot = PlayerStore.IsInstanceExist() && EmporiumEntry.Instance != null
+                ? PlayerStore.Instance.FindAllItem(false) : new System.Collections.Generic.List<GameItem>();
+            if (changed[0]) StorageNameOverlay.RefreshLoaded(snapshot);
+            if (changed[1]) StorageCapacityOverlay.RefreshLoaded(snapshot);
+            if (changed[2] || changed[3]) ItemStatusBackground.RefreshLoaded(snapshot);
+            if (changed[4]) PowerWarningMarker.RefreshLoaded(snapshot);
+            if (changed[4] || changed[5]) OverflowWarningMarker.RefreshLoaded(snapshot);
+            if (changed[6]) MarketChangeMarker.RefreshLoaded(snapshot);
+        }
+
     }
 }
