@@ -11,7 +11,8 @@ namespace XicesBetterExperience
         private sealed class Overlay
         {
             public TreeNodeRender Normal, Shadow, Drag, DragShadow;
-            public double? Ratio; public bool HasRatio;
+            public double? Ratio;
+            public bool HasRatio;
         }
 
         private static readonly Dictionary<GameItemElement, Overlay> overlays = new Dictionary<GameItemElement, Overlay>();
@@ -20,10 +21,16 @@ namespace XicesBetterExperience
         private static bool queued;
         private static void Flush()
         {
-            Canvas.willRenderCanvases -= Flush; queued = false;
+            Canvas.willRenderCanvases -= Flush;
+            queued = false;
             var changed = new List<GameItemElement>(dirty);
             dirty.Clear();
-            foreach (var item in changed) { Overlay overlay; if (overlays.TryGetValue(item, out overlay)) overlay.HasRatio = false; Refresh(item); }
+            foreach (var item in changed)
+            {
+                Overlay overlay;
+                if (overlays.TryGetValue(item, out overlay)) overlay.HasRatio = false;
+                Refresh(item);
+            }
         }
         internal static double? GetRatio(GameItem item)
         {
@@ -77,7 +84,11 @@ namespace XicesBetterExperience
                     var element = owner as GameItemElement;
                     if (element != null) dirty.Add(element);
                 }
-            if (dirty.Count > 0 && !queued) { queued = true; Canvas.willRenderCanvases += Flush; }
+            if (dirty.Count > 0 && !queued)
+            {
+                queued = true;
+                Canvas.willRenderCanvases += Flush;
+            }
         }
 
         public static void Refresh(GameItem item)
@@ -98,7 +109,11 @@ namespace XicesBetterExperience
                 !StorageNameOverlay.IsStorage(item) || !GeneralHelper.IsItemOwned(item)) { Remove(item); return; }
             Overlay overlay;
             if (!overlays.TryGetValue(item, out overlay)) overlay = new Overlay();
-            if (!overlay.HasRatio) { overlay.Ratio = GetRatio(item); overlay.HasRatio = true; }
+            if (!overlay.HasRatio)
+            {
+                overlay.Ratio = GetRatio(item);
+                overlay.HasRatio = true;
+            }
             double? ratio = overlay.Ratio;
             if (!ratio.HasValue) { Remove(item); return; }
             string name = (ratio.Value * 100d).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + "%";
@@ -167,7 +182,9 @@ namespace XicesBetterExperience
 
         public static void Clear()
         {
-            Canvas.willRenderCanvases -= Flush; queued = false; dirty.Clear();
+            Canvas.willRenderCanvases -= Flush;
+            queued = false;
+            dirty.Clear();
             foreach (GameItemElement item in new List<GameItemElement>(overlays.Keys)) Remove(item);
         }
 
@@ -178,7 +195,6 @@ namespace XicesBetterExperience
         }
         internal static void RefreshLoaded(IEnumerable<GameItem> snapshot)
         {
-            foreach (var overlay in overlays.Values) overlay.HasRatio = false;
             foreach (var overlay in overlays.Values) overlay.HasRatio = false;
             var items = new HashSet<GameItem>(snapshot);
             foreach (var item in overlays.Keys) items.Add(item);

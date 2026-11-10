@@ -16,6 +16,36 @@ public static class MarketChangeRegression
         Check(ExperienceSettings.MarketChangeMarker && ModConfig.Instance.MarketChangeEntry.Value,
             "Market change marker defaults on");
         entry.OnEnable();
+        // A fresh size isolates the shared cache from earlier scenarios.
+        UISettings.current.gridSize = 82;
+        CommissaryData.Modifiers.Clear(); CommissaryData.Modifiers["WEAPON"] = 35;
+        var cached = new GameItemElement(); cached.Types.Add("WEAPON");
+        int builds = MarketChangeMarker.GeometryBuildCount;
+        MarketChangeMarker.Refresh(cached);
+        Check(MarketChangeMarker.GeometryBuildCount == ++builds, "Normal and drag arrows share one geometry build");
+        var cachedNodes = Nodes(cached);
+        var cachedGraphic = StatusTest.Graphic(cachedNodes[0]);
+        int submissions = cachedGraphic.GeometryUpdates;
+        for (int i = 0; i < 100; i++) MarketChangeMarker.Refresh(cached);
+        cached.background.image.enabled = false; MarketChangeMarker.Refresh(cached);
+        cached.background.image.enabled = true; MarketChangeMarker.Refresh(cached);
+        Check(MarketChangeMarker.GeometryBuildCount == builds && cachedGraphic.GeometryUpdates == submissions && cachedGraphic.enabled,
+            "Repeated arrow refresh and visibility changes neither rebuild nor resubmit");
+        CommissaryData.Modifiers["WEAPON"] = 70; MarketChangeMarker.Refresh(cached);
+        Check(MarketChangeMarker.GeometryBuildCount == builds, "Magnitude change with same direction reuses geometry");
+        CommissaryData.Modifiers["WEAPON"] = -35; MarketChangeMarker.Refresh(cached);
+        Check(MarketChangeMarker.GeometryBuildCount == ++builds && cachedGraphic.GeometryUpdates == submissions + 1 && cachedGraphic.Triangles[6].Color.g > cachedGraphic.Triangles[6].Color.r,
+            "New direction builds once and submits the correct arrow");
+        CommissaryData.Modifiers["WEAPON"] = 35; MarketChangeMarker.Refresh(cached);
+        Check(MarketChangeMarker.GeometryBuildCount == builds && cachedGraphic.GeometryUpdates == submissions + 2,
+            "Returning to cached direction resubmits geometry without rebuilding");
+        var sameSize = new GameItemElement(); sameSize.Types.Add("WEAPON"); MarketChangeMarker.Refresh(sameSize);
+        Check(MarketChangeMarker.GeometryBuildCount == builds, "Different items share cached arrow geometry");
+        UISettings.current.gridSize = 84; MarketChangeMarker.Refresh(cached);
+        Check(MarketChangeMarker.GeometryBuildCount == ++builds && cachedNodes[0].rectTransform.sizeDelta.x == 42,
+            "Grid size change builds new scaled arrow");
+        MarketChangeMarker.Remove(cached); MarketChangeMarker.Remove(sameSize);
+        UISettings.current.gridSize = 48;
         string[] signIds = { "sign_water", "sign_food", "sign_medical", "sign_household", "sign_material", "sign_firearm", "sign_firearm_heavy", "permit_gun_1", "permit_gun_2", "permit_gun_3" };
         string[] signTypes = { "WATER", "FOOD", "MEDICAL", "HOUSEHOLD_GOOD", "MATERIAL", "WEAPON", "WEAPON", "WEAPON", "WEAPON", "WEAPON" };
         for (int i = 0; i < signIds.Length; i++)

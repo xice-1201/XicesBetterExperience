@@ -91,7 +91,9 @@ public static class OverflowWarningRegression
         Check(mesh.Triangles.TrueForAll(t => t.Color.g < 0.6f), "X has no pale backing tile");
         farm.Tags.Add("MACHINE_RECHARGABLE_TAG");
         var battery = new GameSlotInventory { ParentItem = farm }; MachineHelper.Slots[farm] = battery;
-        PowerWarningMarker.Refresh(farm);
+        int powerChecks = MachineHelper.PowerChecks;
+        MachineWarningCoordinator.Refresh(farm);
+        Check(MachineHelper.PowerChecks == powerChecks + 1, "Coordinator evaluates power once for both warnings");
         Check(!Visible(farm), "Enabled power warning takes priority");
         MachineHelper.Powered.Add(farm);
         PowerWarningBatteryInsertPatch.Postfix(battery);

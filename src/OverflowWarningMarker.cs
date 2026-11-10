@@ -61,7 +61,7 @@ namespace XicesBetterExperience
                 dirtyMachines.Clear();
                 if (refreshFarms) foreach (var machine in machines)
                     if (machine.identifier == "moisture_farm") changed.Add(machine);
-                foreach (GameItemElement machine in changed) PowerWarningMarker.Refresh(machine);
+                foreach (GameItemElement machine in changed) MachineWarningCoordinator.Refresh(machine);
             }
             catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not refresh changed machines: " + error); }
         }
@@ -175,11 +175,11 @@ namespace XicesBetterExperience
         {
             GameItemElement element = item as GameItemElement;
             if (element == null) return;
-            try { RefreshElement(element); }
+            try { RefreshElement(element, PowerWarningMarker.IsWarningActive(element)); }
             catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not refresh overflow warning: " + error); }
         }
 
-        private static void RefreshElement(GameItemElement item)
+        internal static void RefreshElement(GameItemElement item, bool powerWarningActive)
         {
             if (item.IsDestroyed() || item.handler == null) { Remove(item); return; }
             if (IsSupported(item) && machines.Add(item))
@@ -189,7 +189,7 @@ namespace XicesBetterExperience
             }
             TreeNodeRender overlay;
             bool active = ModEntry.IsEnabled && ExperienceSettings.OverflowWarning && NeedsWarning(item) &&
-                !PowerWarningMarker.IsWarningActive(item);
+                !powerWarningActive;
             if (!overlays.TryGetValue(item, out overlay))
             {
                 if (!active) return;

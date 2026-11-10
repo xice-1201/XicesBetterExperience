@@ -31,26 +31,19 @@ namespace XicesBetterExperience
             return ModEntry.IsEnabled && ExperienceSettings.PowerWarning && NeedsWarning(item);
         }
 
-        public static void Refresh(GameItem item)
-        {
-            GameItemElement element = item as GameItemElement;
-            if (element == null) return;
-            try { RefreshElement(element); OverflowWarningMarker.Refresh(element); }
-            catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not refresh power warning: " + error); }
-        }
+        public static void Refresh(GameItem item) { MachineWarningCoordinator.Refresh(item); }
 
         private static void RefreshOnly(GameItem item)
         {
             var element = item as GameItemElement;
             if (element == null) return;
-            try { RefreshElement(element); }
+            try { RefreshElement(element, IsWarningActive(item)); }
             catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not refresh power warning: " + error); }
         }
-        private static void RefreshElement(GameItemElement item)
+        internal static void RefreshElement(GameItemElement item, bool active)
         {
             if (item.IsDestroyed() || item.handler == null) { Remove(item); return; }
             Overlay overlay;
-            bool active = ModEntry.IsEnabled && ExperienceSettings.PowerWarning && NeedsWarning(item);
             if (!overlays.TryGetValue(item, out overlay))
             {
                 if (!active) return;

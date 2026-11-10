@@ -64,27 +64,44 @@ namespace XicesBetterExperience
             AugIdentificationAutomation.ConfigApplied();
             RefreshVisuals(false);
         }
-        private static bool[] lastVisualSettings;
-        private static void RefreshLoaded() { RefreshVisuals(true); }
-        private static void RefreshVisuals(bool force)
+        private sealed class VisualSettings
         {
-            bool[] settings = { ExperienceSettings.StorageNaming, ExperienceSettings.StorageCapacity,
-                ExperienceSettings.StolenMarker, ExperienceSettings.ContrabandMarker,
-                ExperienceSettings.PowerWarning, ExperienceSettings.OverflowWarning, ExperienceSettings.MarketChangeMarker };
-            bool[] changed = new bool[settings.Length];
-            bool any = false;
-            for (int i = 0; i < settings.Length; i++) { changed[i] = force || lastVisualSettings == null || settings[i] != lastVisualSettings[i]; any |= changed[i]; }
-            lastVisualSettings = settings;
-            if (!any) return;
-            var snapshot = PlayerStore.IsInstanceExist() && EmporiumEntry.Instance != null
-                ? PlayerStore.Instance.FindAllItem(false) : new System.Collections.Generic.List<GameItem>();
-            if (changed[0]) StorageNameOverlay.RefreshLoaded(snapshot);
-            if (changed[1]) StorageCapacityOverlay.RefreshLoaded(snapshot);
-            if (changed[2] || changed[3]) ItemStatusBackground.RefreshLoaded(snapshot);
-            if (changed[4]) PowerWarningMarker.RefreshLoaded(snapshot);
-            if (changed[4] || changed[5]) OverflowWarningMarker.RefreshLoaded(snapshot);
-            if (changed[6]) MarketChangeMarker.RefreshLoaded(snapshot);
+            public bool StorageNaming = ExperienceSettings.StorageNaming;
+            public bool StorageCapacity = ExperienceSettings.StorageCapacity;
+            public bool StolenMarker = ExperienceSettings.StolenMarker;
+            public bool ContrabandMarker = ExperienceSettings.ContrabandMarker;
+            public bool PowerWarning = ExperienceSettings.PowerWarning;
+            public bool OverflowWarning = ExperienceSettings.OverflowWarning;
+            public bool MarketChangeMarker = ExperienceSettings.MarketChangeMarker;
         }
 
+        private static VisualSettings lastVisualSettings;
+
+        private static void RefreshLoaded() { RefreshVisuals(true); }
+
+        private static void RefreshVisuals(bool force)
+        {
+            var settings = new VisualSettings();
+            var previous = lastVisualSettings;
+            bool all = force || previous == null;
+            bool storageNaming = all || settings.StorageNaming != previous.StorageNaming;
+            bool storageCapacity = all || settings.StorageCapacity != previous.StorageCapacity;
+            bool statusBackground = all || settings.StolenMarker != previous.StolenMarker ||
+                settings.ContrabandMarker != previous.ContrabandMarker;
+            bool powerWarning = all || settings.PowerWarning != previous.PowerWarning;
+            bool overflowWarning = all || settings.OverflowWarning != previous.OverflowWarning;
+            bool marketChange = all || settings.MarketChangeMarker != previous.MarketChangeMarker;
+            lastVisualSettings = settings;
+
+            if (!storageNaming && !storageCapacity && !statusBackground && !powerWarning && !overflowWarning && !marketChange) return;
+            var snapshot = PlayerStore.IsInstanceExist() && EmporiumEntry.Instance != null
+                ? PlayerStore.Instance.FindAllItem(false) : new System.Collections.Generic.List<GameItem>();
+            if (storageNaming) StorageNameOverlay.RefreshLoaded(snapshot);
+            if (storageCapacity) StorageCapacityOverlay.RefreshLoaded(snapshot);
+            if (statusBackground) ItemStatusBackground.RefreshLoaded(snapshot);
+            if (powerWarning) PowerWarningMarker.RefreshLoaded(snapshot);
+            if (powerWarning || overflowWarning) OverflowWarningMarker.RefreshLoaded(snapshot);
+            if (marketChange) MarketChangeMarker.RefreshLoaded(snapshot);
+        }
     }
 }

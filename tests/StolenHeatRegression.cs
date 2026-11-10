@@ -42,6 +42,34 @@ public static class StolenHeatRegression
         for (int i = 0; i < 100; i++) StatusBackgroundValidatePatch.Postfix(item);
         StatusTest.Check(StatusTest.Graphic(nodes[0]).GeometryUpdates == updates && StatusTest.Nodes(item).Count == 2,
             "Repeated inventory refresh neither creates nodes nor dirties unchanged meshes");
+        int builds = ItemStatusBackground.GeometryBuildCount;
+        for (int i = 0; i < 100; i++) StatusBackgroundValidatePatch.Postfix(item);
+        StatusTest.Check(ItemStatusBackground.GeometryBuildCount == builds, "Unchanged background never rebuilds geometry");
+        item.background.image.enabled = false;
+        StatusBackgroundVisibilityPatch.Postfix(item);
+        item.background.image.enabled = true;
+        StatusBackgroundVisibilityPatch.Postfix(item);
+        StatusTest.Check(ItemStatusBackground.GeometryBuildCount == builds && StatusTest.Graphic(nodes[0]).enabled,
+            "Background visibility restores cached geometry without rebuilding");
+        item.modifiedShape.maxX = 1; item.modifiedShape.maxY = 1;
+        item.modifiedShape.Empty.Add("1,1");
+        StatusBackgroundRotationPatch.Postfix(item);
+        StatusTest.Check(ItemStatusBackground.GeometryBuildCount == ++builds, "Changed dimensions rebuild once for both render paths");
+        item.modifiedShape.Empty.Remove("1,1"); item.modifiedShape.Empty.Add("0,1");
+        StatusBackgroundRotationPatch.Postfix(item);
+        StatusTest.Check(ItemStatusBackground.GeometryBuildCount == ++builds, "Equal bounds and occupied count with different mask rebuild");
+        UISettings.current.gridSize = 60;
+        StatusBackgroundRotationPatch.Postfix(item);
+        StatusTest.Check(ItemStatusBackground.GeometryBuildCount == ++builds && StatusTest.Area(StatusTest.Graphic(nodes[0]).Triangles) == 3*60*60,
+            "Grid size change rebuilds correctly scaled geometry");
+        UISettings.current.gridSize = 48;
+        item.modifiedShape.maxX = 0; item.modifiedShape.maxY = 0; item.modifiedShape.Empty.Clear();
+        StatusBackgroundRotationPatch.Postfix(item);
+        builds = ItemStatusBackground.GeometryBuildCount;
+        item.Tags.Add("CONTRABAND_LEVEL_LOW");
+        ItemStatusBackground.Refresh(item);
+        StatusTest.Check(ItemStatusBackground.GeometryBuildCount == builds + 1, "Color state change rebuilds background");
+        item.Tags.Remove("CONTRABAND_LEVEL_LOW"); ItemStatusBackground.Refresh(item);
         item.IntTags["STOLEN_VALUE_INT"] = 0; StolenHeatSetPatch.Postfix(item);
         StatusTest.Check(nodes.TrueForAll(n => !StatusTest.Graphic(n).enabled), "Zero heat hides background");
         item.IntTags["STOLEN_VALUE_INT"] = 1;

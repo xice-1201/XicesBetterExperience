@@ -18,7 +18,19 @@ namespace XicesBetterExperience
                 Graphic = MarkerGraphic.Attach(Node);
             }
         }
-        private sealed class Overlay { public Layer Normal, Drag; public int[] ShapeMask; public int ShapeWidth, ShapeHeight; public float Grid; public bool Stolen, Contraband; public bool HasGeometry; }
+        private sealed class Overlay
+        {
+            public Layer Normal, Drag;
+            public int[] ShapeMask;
+            public int ShapeWidth, ShapeHeight;
+            public float Grid;
+            public bool Stolen, Contraband;
+            public bool HasGeometry;
+        }
+#if REGRESSION_TESTS
+        internal static int GeometryBuildCount;
+#endif
+
         private static readonly Dictionary<GameItemElement, Overlay> overlays = new Dictionary<GameItemElement, Overlay>();
         private static readonly Color yellow = new Color(1f, 0.82f, 0.08f, 0.25f);
         private static readonly Color red = new Color(1f, 0.12f, 0.12f, 0.25f);
@@ -44,26 +56,16 @@ namespace XicesBetterExperience
                 overlays.Add(item, overlay);
             }
             float grid = UISettings.current.gridSize;
-            var shape = item.modifiedShape;
-            int width = shape.maxX - shape.minX + 1, height = shape.maxY - shape.minY + 1;
-            bool shapeChanged = !overlay.HasGeometry || overlay.ShapeWidth != width || overlay.ShapeHeight != height || overlay.ShapeMask == null;
-            if (!shapeChanged)
-            {
-                int maskIndex = 0;
-                for (int y = shape.minY; y <= shape.maxY && !shapeChanged; y++)
-                    for (int x = shape.minX; x <= shape.maxX; x++, maskIndex++)
-                        if (overlay.ShapeMask[maskIndex] != shape.Get(x, y)) { shapeChanged = true; break; }
-            }
-            bool rebuild = shapeChanged || overlay.Grid != grid || overlay.Stolen != stolen || overlay.Contraband != contraband;
+            bool rebuild = HasShapeChanged(item, overlay) || overlay.Grid != grid ||
+                overlay.Stolen != stolen || overlay.Contraband != contraband;
             List<MarkerTriangle> triangles = rebuild ? Build(item, stolen, contraband) : null;
             if (rebuild)
             {
-                overlay.ShapeWidth = width; overlay.ShapeHeight = height;
-                overlay.ShapeMask = new int[width * height];
-                int maskIndex = 0;
-                for (int y = shape.minY; y <= shape.maxY; y++)
-                    for (int x = shape.minX; x <= shape.maxX; x++) overlay.ShapeMask[maskIndex++] = shape.Get(x, y);
-                overlay.Grid = grid; overlay.Stolen = stolen; overlay.Contraband = contraband; overlay.HasGeometry = true;
+                CaptureShape(item, overlay);
+                overlay.Grid = grid;
+                overlay.Stolen = stolen;
+                overlay.Contraband = contraband;
+                overlay.HasGeometry = true;
             }
             Vector2 size = new Vector2((item.modifiedShape.maxX - item.modifiedShape.minX + 1) * UISettings.current.gridSize,
                 (item.modifiedShape.maxY - item.modifiedShape.minY + 1) * UISettings.current.gridSize);
@@ -73,8 +75,36 @@ namespace XicesBetterExperience
             Set(overlay.Drag, triangles, item.fakeBackground.image.enabled, rebuild);
         }
 
+        private static bool HasShapeChanged(GameItemElement item, Overlay overlay)
+        {
+            var shape = item.modifiedShape;
+            int width = shape.maxX - shape.minX + 1;
+            int height = shape.maxY - shape.minY + 1;
+            if (!overlay.HasGeometry || overlay.ShapeWidth != width || overlay.ShapeHeight != height || overlay.ShapeMask == null) return true;
+            int index = 0;
+            for (int y = shape.minY; y <= shape.maxY; y++)
+                for (int x = shape.minX; x <= shape.maxX; x++)
+                    if (overlay.ShapeMask[index++] != shape.Get(x, y)) return true;
+            return false;
+        }
+
+        private static void CaptureShape(GameItemElement item, Overlay overlay)
+        {
+            var shape = item.modifiedShape;
+            overlay.ShapeWidth = shape.maxX - shape.minX + 1;
+            overlay.ShapeHeight = shape.maxY - shape.minY + 1;
+            overlay.ShapeMask = new int[overlay.ShapeWidth * overlay.ShapeHeight];
+            int index = 0;
+            for (int y = shape.minY; y <= shape.maxY; y++)
+                for (int x = shape.minX; x <= shape.maxX; x++)
+                    overlay.ShapeMask[index++] = shape.Get(x, y);
+        }
+
         internal static List<MarkerTriangle> Build(GameItemElement item, bool stolen, bool contraband)
         {
+#if REGRESSION_TESTS
+            GeometryBuildCount++;
+#endif
             var result = new List<MarkerTriangle>();
             if (!stolen && !contraband) return result;
             var shape = item.modifiedShape;
