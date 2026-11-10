@@ -5,7 +5,7 @@ $outputPath = Join-Path $projectRoot 'dist/tests'
 New-Item -ItemType Directory -Path $outputPath -Force | Out-Null
 $testExe = Join-Path $outputPath 'GuideRegression.exe'
 $frameworkPath = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319'
-$arguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $testExe),
+$arguments = @('/define:REGRESSION_TESTS', '/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $testExe),
     ('/reference:' + (Join-Path $frameworkPath 'mscorlib.dll')),
     ('/reference:' + (Join-Path $frameworkPath 'System.dll')),
     ('/reference:' + (Join-Path $frameworkPath 'System.Core.dll')),
@@ -24,6 +24,7 @@ $arguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $
     (Join-Path $projectRoot 'src/ExchangeAutoPickup.cs'),
     (Join-Path $projectRoot 'src/AutoDiscardAppraisalReceipt.cs'),
     (Join-Path $projectRoot 'src/PowerWarningMarker.cs'),
+    (Join-Path $projectRoot 'src/MachineWarningCoordinator.cs'),
     (Join-Path $projectRoot 'src/OverflowWarningMarker.cs'),
     (Join-Path $PSScriptRoot 'OverflowWarningRegression.cs'),
     (Join-Path $projectRoot 'src/MarketChangeMarker.cs'),

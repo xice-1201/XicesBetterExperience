@@ -89,8 +89,14 @@ namespace XicesBetterExperience
             return new[] { node };
         }
 
+#if REGRESSION_TESTS
+        internal static int GeometryBuildCount;
+#endif
         internal static List<MarkerTriangle> BuildArrow(float size, bool up)
         {
+#if REGRESSION_TESTS
+            GeometryBuildCount++;
+#endif
             var result = new List<MarkerTriangle>();
             // A pale outer edge, dark keyline and saturated fill keep the arrow
             // legible against both status colors and detailed item sprites.

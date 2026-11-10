@@ -10,6 +10,7 @@ public class GameSlotInventory : GameInventory
 
 public static class MachineHelper
 {
+    public static int PowerChecks;
     public const string MACHINE_RECHARGABLE_TAG = "MACHINE_RECHARGABLE_TAG";
     public static readonly Dictionary<GameItem, GameSlotInventory> Slots = new Dictionary<GameItem, GameSlotInventory>();
     public static readonly HashSet<GameItem> Powered = new HashSet<GameItem>();
@@ -19,7 +20,7 @@ public static class MachineHelper
     public static readonly Dictionary<GameItem, List<GameItem>> Modules = new Dictionary<GameItem, List<GameItem>>();
     public static List<GameItem> GetModules(GameItem item) { return Modules.ContainsKey(item) ? Modules[item] : new List<GameItem>(); }
     public static GameInventory GetSlot(GameItem item, int index) { GameSlotInventory slot; return index == 2 && WaterSlots.TryGetValue(item, out slot) ? slot : index == 3 && OutputSlots.TryGetValue(item, out slot) ? slot : null; }
-    public static bool CanPower(GameItem item, GameSlotInventory slot) { return item != null && slot != null && Powered.Contains(item); }
+    public static bool CanPower(GameItem item, GameSlotInventory slot) { PowerChecks++; return item != null && slot != null && Powered.Contains(item); }
 }
 
 public static class MachineryHelper
