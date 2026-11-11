@@ -47,6 +47,7 @@ public class ModConfig
     public ConfigEntry<bool> AutoDiscardReceiptEntry;
     public ConfigEntry<bool> PowerWarningEntry;
     public ConfigEntry<bool> OverflowWarningEntry;
+    public ConfigEntry<bool> ModuleAffixEntry;
     public ConfigEntry<bool> MarketChangeEntry;
     public ConfigEntry<int> AutomationEntry;
     public readonly Dictionary<string, ConfigEntry<int>> AutomationEntries = new Dictionary<string, ConfigEntry<int>>();
@@ -75,6 +76,7 @@ public class ModConfig
         if (key == "auto_discard_appraisal_receipt") return AutoDiscardReceiptEntry = new ConfigEntry<bool> { Value = value };
         if (key == "power_warning") return PowerWarningEntry = new ConfigEntry<bool> { Value = value };
         if (key == "overflow_warning") return OverflowWarningEntry = new ConfigEntry<bool> { Value = value };
+        if (key == "module_affix_marker") return ModuleAffixEntry = new ConfigEntry<bool> { Value = value };
         if (key == "market_change_marker") return MarketChangeEntry = new ConfigEntry<bool> { Value = value };
         if (key == "auto_open_appraisal_guide")
         {
@@ -94,7 +96,8 @@ public class ItemCondition { public string identifier; }
 public class ItemFeature { public ItemCondition realCondition, current; public ItemCondition GetCurrentItemCondition() { return current; } }
 public class GameItem : GraphNodeStorage
 {
-    public TagState GetTagReadonly(string tag) { return new TagState { Value = IntTags.ContainsKey(tag) ? IntTags[tag] : 0 }; }
+    public TagState GetTagReadonly(string tag) { return new TagState { Value = IntTags.ContainsKey(tag) ? IntTags[tag] : 0, Text = StringTags.ContainsKey(tag) ? StringTags[tag] : null }; }
+    public readonly Dictionary<string,string> StringTags = new Dictionary<string,string>();
     public ItemFeature InjectorFeature;
     public ItemFeature FindItemFeatureByCategory(string category) { return InjectorFeature; }
     public TestGridShape modifiedShape = new TestGridShape();
@@ -388,9 +391,9 @@ public static class GuideRegression
         UnityEngine.Application.version = "0.46D";
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
-        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 20 &&
+        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 21 &&
             ModConfig.Instance.Key == "auto_open_appraisal_guide" && ExperienceSettings.AutoOpenAppraisalGuide,
-            "Eighteen settings plus two internal layout entries");
+            "Nineteen settings plus two internal layout entries");
         Check(!ExperienceSettings.AugIdentification && ExperienceSettings.SettingsTab("aug_identification") == "automation" && !ExperienceSettings.IsAutomationSetting("aug_identification"), "Aug checkbox defaults off in automation tab without slider extras");
         Check(ModConfig.Instance.Label().StartsWith("zh:"), "Chinese config label");
         ModHelper.Language = "en";
@@ -503,6 +506,7 @@ public static class GuideRegression
         PowerWarningRegression.Run(Entry);
         OverflowWarningRegression.Run(Entry);
         MarketChangeRegression.Run(Entry);
+        ModuleAffixRegression.Run(Entry);
         }
         catch (Exception error)
         {

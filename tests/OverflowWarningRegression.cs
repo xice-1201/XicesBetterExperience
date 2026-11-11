@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using XicesBetterExperience;
 
-public class TagState { public int Value; public int GetInt() { return Value; } }
+public class TagState { public string Text; public string GetString() { return Text; } public int Value; public int GetInt() { return Value; } }
 
 public class Liquid
 {

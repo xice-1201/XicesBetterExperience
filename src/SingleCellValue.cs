@@ -23,12 +23,12 @@ namespace XicesBetterExperience
             {
                 Context context = current;
                 if (context == null || context.Done || String.IsNullOrEmpty(text)) return;
-                if (!context.Prepared) Prepare(context);
+                if (!context.Prepared) PrepareEstimateMatch(context);
                 if (context.Expected == null || !String.Equals(text, context.Expected, StringComparison.Ordinal)) return;
                 text = context.Replacement;
                 context.Done = true;
             }
-            private static void Prepare(Context context)
+            private static void PrepareEstimateMatch(Context context)
             {
                 context.Prepared = true;
                 GameItemElement item = context.Item;
