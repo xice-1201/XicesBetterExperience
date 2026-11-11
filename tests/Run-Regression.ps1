@@ -28,6 +28,9 @@ $arguments = @('/define:REGRESSION_TESTS', '/nologo', '/noconfig', '/nostdlib+',
     (Join-Path $projectRoot 'src/OverflowWarningMarker.cs'),
     (Join-Path $PSScriptRoot 'OverflowWarningRegression.cs'),
     (Join-Path $projectRoot 'src/MarketChangeMarker.cs'),
+    (Join-Path $projectRoot 'src/ModuleAffixMarker.cs'),
+    (Join-Path $projectRoot 'src/ModuleAffixIcons.cs'),
+    (Join-Path $PSScriptRoot 'ModuleAffixRegression.cs'),
     (Join-Path $projectRoot 'src/MarkerGraphic.cs'),
     (Join-Path $projectRoot 'src/ItemStatusBackground.cs'),
     (Join-Path $PSScriptRoot 'AppraisalAutomationRegression.cs'),
@@ -70,8 +73,10 @@ if ($LASTEXITCODE -ne 0) { throw 'Aug identification regression compilation fail
 & $augExe
 if ($LASTEXITCODE -ne 0) { throw 'Aug identification regression failed.' }
 
+$harmonyPath = 'E:\Steam\steamapps\common\Probably Stolen\Probably Stolen_Data\Managed\0Harmony.dll'
+Copy-Item -LiteralPath $harmonyPath -Destination $outputPath -Force
 $valueExe = Join-Path $outputPath 'SingleCellValueRegression.exe'
-$valueArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $valueExe),
+$valueArguments = @(('/reference:' + $harmonyPath), '/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $valueExe),
     ('/reference:' + (Join-Path $frameworkPath 'mscorlib.dll')),
     ('/reference:' + (Join-Path $frameworkPath 'System.dll')),
     (Join-Path $projectRoot 'src/SingleCellValue.cs'),

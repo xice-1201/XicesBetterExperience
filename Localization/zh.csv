@@ -46,3 +46,5 @@ injector_automation_level_1,拥有免疫宁检测指南
 injector_automation_level_2,总是
 setting_aug_identification,自动鉴别改造体
 setting_aug_identification_tip,改造体到访时自动高亮霰弹枪
+setting_module_affix_marker,模组词条显示
+setting_module_affix_marker_tip,在模组图标上显示其附加词条。

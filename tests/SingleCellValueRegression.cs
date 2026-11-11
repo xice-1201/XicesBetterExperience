@@ -1,11 +1,6 @@
 using System;
 using XicesBetterExperience;
 
-namespace HarmonyLib
-{
-    [AttributeUsage(AttributeTargets.Class)]
-    public class HarmonyPatch : Attribute { public HarmonyPatch(Type type, string method) { } }
-}
 namespace XicesBetterExperience
 {
     public static class ModEntry { public static bool IsEnabled = true; public const string ModId = "test"; }
@@ -13,13 +8,28 @@ namespace XicesBetterExperience
 }
 public class GameItemElement
 {
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    public string GetTooltipBasic()
+    {
+        var builder = new RichTextBuilder();
+        builder.AddLine("Unrelated line");
+        builder.AddLine(String.Format("Estimate {0}, base {1}", Estimate, Base));
+        if (ThrowDuringTooltip) throw new InvalidOperationException("native tooltip failure");
+        return builder.Last;
+    }
+    public bool ThrowDuringTooltip;
     public long Estimate = 19, Base = 10;
     public int Cells = 6, ValueReads, ShapeReads;
     public long GetCurrentValue(bool a, bool b, bool c, bool d, long e) { ValueReads++; return Estimate; }
     public long GetBaseValue() { return Base; }
     public int GetModifiedItemSize() { ShapeReads++; return Cells; }
 }
-public class RichTextBuilder { }
+public class RichTextBuilder
+{
+    public string Last;
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    public void AddLine(string text) { Last = text; }
+}
 public static class LocHelper
 {
     public static int Reads;
@@ -36,6 +46,17 @@ public static class SingleCellValueRegression
     private static string Line(string value) { SingleCellValueTooltip.EstimateLinePatch.Prefix(ref value); return value; }
     public static void Main()
     {
+        // Exercise the real game's Harmony version, including reserved lifecycle names.
+        var harmony = new HarmonyLib.Harmony("xice.tests.tooltip");
+        harmony.PatchAll(typeof(SingleCellValueTooltip).Assembly);
+        var smoke = new GameItemElement();
+        Check(smoke.GetTooltipBasic() == "Estimate 19, per cell 3, base 10", "Real Harmony installs and executes tooltip patches");
+        smoke.ThrowDuringTooltip = true;
+        bool threw = false;
+        try { smoke.GetTooltipBasic(); } catch (InvalidOperationException) { threw = true; }
+        Check(threw && Line("Estimate 19, base 10") == "Estimate 19, base 10", "Real Harmony finalizer restores context on exception");
+        harmony.UnpatchAll("xice.tests.tooltip");
+        LocHelper.Reads = 0;
         var item = new GameItemElement();
         SingleCellValueTooltip.Context previous;
         SingleCellValueTooltip.Prefix(item, out previous);

@@ -46,3 +46,5 @@ injector_automation_level_1,Own the Immunivax inspection guide
 injector_automation_level_2,Always
 setting_aug_identification,Automatic Aug identification
 setting_aug_identification_tip,Automatically highlight the shotgun when an Aug visits.
+setting_module_affix_marker,Module affix icons
+setting_module_affix_marker_tip,Show additional affixes as icons on modules.

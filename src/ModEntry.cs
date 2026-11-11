@@ -49,6 +49,7 @@ namespace XicesBetterExperience
             PowerWarningMarker.Clear();
             OverflowWarningMarker.Clear();
             MarketChangeMarker.Clear();
+            ModuleAffixMarker.Clear();
         }
 
         private void OnConfigApplied(string modId)
@@ -73,6 +74,7 @@ namespace XicesBetterExperience
             public bool PowerWarning = ExperienceSettings.PowerWarning;
             public bool OverflowWarning = ExperienceSettings.OverflowWarning;
             public bool MarketChangeMarker = ExperienceSettings.MarketChangeMarker;
+            public bool ModuleAffixMarker = ExperienceSettings.ModuleAffixMarker;
         }
 
         private static VisualSettings lastVisualSettings;
@@ -91,9 +93,10 @@ namespace XicesBetterExperience
             bool powerWarning = all || settings.PowerWarning != previous.PowerWarning;
             bool overflowWarning = all || settings.OverflowWarning != previous.OverflowWarning;
             bool marketChange = all || settings.MarketChangeMarker != previous.MarketChangeMarker;
+            bool moduleAffix = all || settings.ModuleAffixMarker != previous.ModuleAffixMarker;
             lastVisualSettings = settings;
 
-            if (!storageNaming && !storageCapacity && !statusBackground && !powerWarning && !overflowWarning && !marketChange) return;
+            if (!storageNaming && !storageCapacity && !statusBackground && !powerWarning && !overflowWarning && !marketChange && !moduleAffix) return;
             var snapshot = PlayerStore.IsInstanceExist() && EmporiumEntry.Instance != null
                 ? PlayerStore.Instance.FindAllItem(false) : new System.Collections.Generic.List<GameItem>();
             if (storageNaming) StorageNameOverlay.RefreshLoaded(snapshot);
@@ -102,6 +105,7 @@ namespace XicesBetterExperience
             if (powerWarning) PowerWarningMarker.RefreshLoaded(snapshot);
             if (powerWarning || overflowWarning) OverflowWarningMarker.RefreshLoaded(snapshot);
             if (marketChange) MarketChangeMarker.RefreshLoaded(snapshot);
+            if (moduleAffix) ModuleAffixMarker.RefreshLoaded(snapshot);
         }
     }
 }

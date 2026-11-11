@@ -35,6 +35,8 @@ namespace XicesBetterExperience
         private static ConfigEntry<bool> powerWarning;
         private static ConfigEntry<bool> overflowWarning;
         private static ConfigEntry<bool> marketChangeMarker;
+        private static ConfigEntry<bool> moduleAffixMarker;
+        public static bool ModuleAffixMarker { get { return moduleAffixMarker == null || moduleAffixMarker.Value; } }
 
         public static int AppraisalAutomationFor(GameItem item)
         {
@@ -69,7 +71,7 @@ namespace XicesBetterExperience
             if (key == "aug_identification" || IsAutomationSetting(key)) return "automation";
             if (key == "overflow_warning") return "icons";
             if (key == "storage_naming" || key == "storage_capacity" || key == "stolen_marker" || key == "contraband_marker" ||
-                key == "power_warning" || key == "market_change_marker") return "icons";
+                key == "power_warning" || key == "market_change_marker" || key == "module_affix_marker") return "icons";
             return "general";
         }
 
@@ -171,6 +173,8 @@ namespace XicesBetterExperience
                 "overflow_warning", true, "", Text("setting_overflow_warning"), Text("setting_overflow_warning_tip"));
             marketChangeMarker = ModConfig.For(ModEntry.ModId).Define(
                 "market_change_marker", true, "", Text("setting_market_change_marker"), Text("setting_market_change_marker_tip"));
+            moduleAffixMarker = ModConfig.For(ModEntry.ModId).Define(
+                "module_affix_marker", true, "", Text("setting_module_affix_marker"), Text("setting_module_affix_marker_tip"));
             tabletLayout = ModConfig.For(ModEntry.ModId).Define(TabletLayoutKey, "", "Internal", () => TabletLayoutKey);
             phoneLayout = ModConfig.For(ModEntry.ModId).Define(PhoneLayoutKey, "", "Internal", () => PhoneLayoutKey);
         }
