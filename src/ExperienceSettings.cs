@@ -8,6 +8,22 @@ namespace XicesBetterExperience
         private static ConfigEntry<bool> retainWindowLayout;
         private static ConfigEntry<string> tabletLayout;
         private static ConfigEntry<string> phoneLayout;
+        private static ConfigEntry<string> vendingFountainLayout;
+        internal const string VendingFountainLayoutKey = "internal_vending_fountain_layout_v1";
+        internal static string VendingFountainLayout { get { return vendingFountainLayout == null ? "" : vendingFountainLayout.Value; } }
+        internal static void SaveVendingFountainLayout(string value) { if (vendingFountainLayout != null) vendingFountainLayout.Set(value); }
+        private static ConfigEntry<string> waterScannerLayout;
+        internal const string WaterScannerLayoutKey = "internal_water_scanner_layout_v1";
+        internal static string WaterScannerLayout { get { return waterScannerLayout == null ? "" : waterScannerLayout.Value; } }
+        internal static void SaveWaterScannerLayout(string value) { if (waterScannerLayout != null) waterScannerLayout.Set(value); }
+        private static ConfigEntry<string> archiveLayout;
+        private static ConfigEntry<string> trashLayout;
+        internal const string ArchiveLayoutKey = "internal_archive_layout_v1";
+        internal const string TrashLayoutKey = "internal_trash_layout_v1";
+        internal static string ArchiveLayout { get { return archiveLayout == null ? "" : archiveLayout.Value; } }
+        internal static string TrashLayout { get { return trashLayout == null ? "" : trashLayout.Value; } }
+        internal static void SaveArchiveLayout(string value) { if (archiveLayout != null) archiveLayout.Set(value); }
+        internal static void SaveTrashLayout(string value) { if (trashLayout != null) trashLayout.Set(value); }
         internal const string PhoneLayoutKey = "internal_phone_layout_v1";
         internal static string PhoneLayout { get { return phoneLayout == null ? "" : phoneLayout.Value; } }
         internal static void SavePhoneLayout(string value) { if (phoneLayout != null) phoneLayout.Set(value); }
@@ -15,7 +31,7 @@ namespace XicesBetterExperience
         public static bool RetainWindowLayout { get { return retainWindowLayout == null || retainWindowLayout.Value; } }
         internal static string TabletLayout { get { return tabletLayout == null ? "" : tabletLayout.Value; } }
         internal static void SaveTabletLayout(string value) { if (tabletLayout != null) tabletLayout.Set(value); }
-        internal static bool IsInternalSetting(string key) { return key == TabletLayoutKey || key == PhoneLayoutKey; }
+        internal static bool IsInternalSetting(string key) { return key == TabletLayoutKey || key == PhoneLayoutKey || key == ArchiveLayoutKey || key == TrashLayoutKey || key == WaterScannerLayoutKey || key == VendingFountainLayoutKey; }
         private static ConfigEntry<bool> storageNaming;
         private static ConfigEntry<bool> storageCapacity;
         public static bool StorageCapacity { get { return storageCapacity == null || storageCapacity.Value; } }
@@ -23,6 +39,8 @@ namespace XicesBetterExperience
         private static ConfigEntry<int> appraisalAutomation;
         private static ConfigEntry<int> ribwichAutomation;
         private static ConfigEntry<int> plasmaAutomation;
+        private static ConfigEntry<int> cigaretteAutomation;
+        public static int CigaretteAutomation { get { return cigaretteAutomation == null ? 0 : Math.Max(0, Math.Min(3, cigaretteAutomation.Value)); } }
         private static ConfigEntry<int> injectorAutomation;
         private static ConfigEntry<bool> augIdentification;
         public static bool AugIdentification { get { return augIdentification != null && augIdentification.Value; } }
@@ -32,6 +50,8 @@ namespace XicesBetterExperience
         private static ConfigEntry<bool> singleCellValue;
         private static ConfigEntry<bool> exchangeAutoPickup;
         private static ConfigEntry<bool> autoDiscardAppraisalReceipt;
+        private static ConfigEntry<bool> nightServiceInformation;
+        public static bool NightServiceInformation { get { return nightServiceInformation == null || nightServiceInformation.Value; } }
         private static ConfigEntry<bool> powerWarning;
         private static ConfigEntry<bool> overflowWarning;
         private static ConfigEntry<bool> marketChangeMarker;
@@ -52,7 +72,7 @@ namespace XicesBetterExperience
 
         internal static int AutomationMax(string key)
         {
-            return key == "injector_inspection_automation" ? 2 : key == "appraisal_automation_ribwich_v2" ? 3 : key == "appraisal_automation_plasma_v2" ? 2 : 4;
+            return key == "cigarette_inspection_automation" ? 3 : key == "injector_inspection_automation" ? 2 : key == "appraisal_automation_ribwich_v2" ? 3 : key == "appraisal_automation_plasma_v2" ? 2 : 4;
         }
 
         internal static int AutomationLevel(string key, int index)
@@ -63,7 +83,7 @@ namespace XicesBetterExperience
 
         internal static bool IsAutomationSetting(string key)
         {
-            return key == "injector_inspection_automation" || key == "appraisal_automation" || key == "appraisal_automation_ribwich_v2" || key == "appraisal_automation_plasma_v2";
+            return key == "cigarette_inspection_automation" || key == "injector_inspection_automation" || key == "appraisal_automation" || key == "appraisal_automation_ribwich_v2" || key == "appraisal_automation_plasma_v2";
         }
 
         internal static string SettingsTab(string key)
@@ -150,6 +170,9 @@ namespace XicesBetterExperience
             plasmaAutomation = ModConfig.For(ModEntry.ModId).Define(
                 "appraisal_automation_plasma_v2", 0, "", Text("setting_appraisal_automation_plasma"), 0, 2,
                 Text("setting_appraisal_automation_tip"));
+            cigaretteAutomation = ModConfig.For(ModEntry.ModId).Define(
+                "cigarette_inspection_automation", 0, "", Text("setting_cigarette_automation"), 0, 3,
+                Text("setting_cigarette_automation_tip"));
             injectorAutomation = ModConfig.For(ModEntry.ModId).Define(
                 "injector_inspection_automation", 0, "", Text("setting_injector_automation"), 0, 2,
                 Text("setting_injector_automation_tip"));
@@ -167,6 +190,9 @@ namespace XicesBetterExperience
             autoDiscardAppraisalReceipt = ModConfig.For(ModEntry.ModId).Define(
                 "auto_discard_appraisal_receipt", true, "", Text("setting_auto_discard_receipt"),
                 Text("setting_auto_discard_receipt_tip"));
+            nightServiceInformation = ModConfig.For(ModEntry.ModId).Define(
+                "night_service_information", true, "", Text("setting_night_service_information"),
+                Text("setting_night_service_information_tip"));
             powerWarning = ModConfig.For(ModEntry.ModId).Define(
                 "power_warning", true, "", Text("setting_power_warning"), Text("setting_power_warning_tip"));
             overflowWarning = ModConfig.For(ModEntry.ModId).Define(
@@ -176,6 +202,10 @@ namespace XicesBetterExperience
             moduleAffixMarker = ModConfig.For(ModEntry.ModId).Define(
                 "module_affix_marker", true, "", Text("setting_module_affix_marker"), Text("setting_module_affix_marker_tip"));
             tabletLayout = ModConfig.For(ModEntry.ModId).Define(TabletLayoutKey, "", "Internal", () => TabletLayoutKey);
+            archiveLayout = ModConfig.For(ModEntry.ModId).Define(ArchiveLayoutKey, "", "Internal", () => ArchiveLayoutKey);
+            trashLayout = ModConfig.For(ModEntry.ModId).Define(TrashLayoutKey, "", "Internal", () => TrashLayoutKey);
+            vendingFountainLayout = ModConfig.For(ModEntry.ModId).Define(VendingFountainLayoutKey, "", "Internal", () => VendingFountainLayoutKey);
+            waterScannerLayout = ModConfig.For(ModEntry.ModId).Define(WaterScannerLayoutKey, "", "Internal", () => WaterScannerLayoutKey);
             phoneLayout = ModConfig.For(ModEntry.ModId).Define(PhoneLayoutKey, "", "Internal", () => PhoneLayoutKey);
         }
 

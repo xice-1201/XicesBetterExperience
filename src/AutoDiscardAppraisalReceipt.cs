@@ -7,6 +7,23 @@ namespace XicesBetterExperience
         internal static bool CreatingReceipt;
         internal static bool EligibleAppraisal;
         internal static bool CreatingEventSlip;
+        internal static bool CreatingInspectionSlip;
+    }
+
+    [HarmonyPatch(typeof(ContrabandHelper), "LeaveInspectionSlip", new[] { typeof(string) })]
+    internal static class AutoDiscardInspectionSlipAroundCreation
+    {
+        public static void Prefix(out bool __state)
+        {
+            __state = AppraisalReceiptState.CreatingInspectionSlip;
+            AppraisalReceiptState.CreatingInspectionSlip = ModEntry.IsEnabled &&
+                ExperienceSettings.AutoDiscardAppraisalReceipt;
+        }
+
+        public static void Finalizer(bool __state)
+        {
+            AppraisalReceiptState.CreatingInspectionSlip = __state;
+        }
     }
 
     [HarmonyPatch(typeof(StoreEvent), "CreateAndAddSlip", new[] { typeof(int) })]
@@ -62,7 +79,8 @@ namespace XicesBetterExperience
         public static void Postfix(GameItem __0)
         {
             if ((!AppraisalReceiptState.CreatingReceipt &&
-                !AppraisalReceiptState.CreatingEventSlip) || __0 == null) return;
+                !AppraisalReceiptState.CreatingEventSlip &&
+                !AppraisalReceiptState.CreatingInspectionSlip) || __0 == null) return;
 
             GraphNodeStorage trash = EmporiumEntry.Instance == null ? null : EmporiumEntry.Instance.trashcan;
             if (trash == null)

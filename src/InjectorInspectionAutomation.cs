@@ -18,6 +18,7 @@ namespace XicesBetterExperience
         public static void Prefix(InspectionUIManager __instance)
         {
             Restore();
+            CigaretteInspectionAutomation.Restore();
         }
 
         public static void Postfix(InspectionUIManager __instance, GameItem __0, bool __runOriginal = true)
@@ -82,25 +83,25 @@ namespace XicesBetterExperience
 
     public sealed class InjectorInspectionLifetime : UnityEngine.MonoBehaviour
     {
-        public void OnDisable() { InjectorInspectionAutomation.Restore(); }
-        public void OnDestroy() { InjectorInspectionAutomation.Restore(); }
+        public void OnDisable() { InjectorInspectionAutomation.Restore(); CigaretteInspectionAutomation.Restore(); }
+        public void OnDestroy() { InjectorInspectionAutomation.Restore(); CigaretteInspectionAutomation.Restore(); }
     }
 
     [HarmonyPatch(typeof(InspectionUIManager), "CloseUI")]
     public static class InjectorInspectionExit
     {
-        public static void Prefix() { InjectorInspectionAutomation.Restore(); }
+        public static void Prefix() { InjectorInspectionAutomation.Restore(); CigaretteInspectionAutomation.Restore(); }
     }
 
     [HarmonyPatch(typeof(InspectionUIManager), "ResetUI")]
     public static class InjectorInspectionReset
     {
-        public static void Prefix() { InjectorInspectionAutomation.Restore(); }
+        public static void Prefix() { InjectorInspectionAutomation.Restore(); CigaretteInspectionAutomation.Restore(); }
     }
 
     [HarmonyPatch(typeof(InspectionUIManager), "Update")]
     public static class InjectorInspectionSession
     {
-        public static void Postfix() { InjectorInspectionAutomation.CheckSession(); }
+        public static void Postfix() { InjectorInspectionAutomation.CheckSession(); CigaretteInspectionAutomation.CheckSession(); }
     }
 }

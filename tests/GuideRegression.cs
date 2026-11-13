@@ -21,6 +21,7 @@ public interface IMod { void Init(ModManifest manifest); void OnEnable(); void O
 // Window lifecycle uses its own focused harness with UI coordinate boundaries.
 public static class AugIdentificationAutomation { public static void Clear() { } public static void ConfigApplied() { } }
 public static class WindowLayoutMemory { public static void Clear() { } public static void ConfigApplied() { } }
+public static class NightServiceInformation { public static void RefreshOpen() { } }
 public class ModManifest { public string ID; }
 public class ModLog { public ModLog(ModManifest manifest) { } public void Log(object message) { } }
 public class ConfigEntry<T> { public T Value; public void Set(T value) { Value = value; } }
@@ -45,6 +46,8 @@ public class ModConfig
     public ConfigEntry<bool> SingleCellEntry;
     public ConfigEntry<bool> ExchangeAutoPickupEntry;
     public ConfigEntry<bool> AutoDiscardReceiptEntry;
+    public ConfigEntry<bool> NightServiceEntry;
+    public readonly List<string> BooleanKeys = new List<string>();
     public ConfigEntry<bool> PowerWarningEntry;
     public ConfigEntry<bool> OverflowWarningEntry;
     public ConfigEntry<bool> ModuleAffixEntry;
@@ -65,6 +68,8 @@ public class ModConfig
     public ConfigEntry<bool> Define(string key, bool value, string section, Func<string> label, Func<string> tip)
     {
         Definitions++;
+        BooleanKeys.Add(key);
+        if (key == "night_service_information") return NightServiceEntry = new ConfigEntry<bool> { Value = value };
         if (key == "retain_window_layout") return LayoutEntry = new ConfigEntry<bool> { Value = value };
         if (key == "retain_document_page") return PageEntry = new ConfigEntry<bool> { Value = value };
         if (key == "storage_capacity") return CapacityEntry = new ConfigEntry<bool> { Value = value };
@@ -98,8 +103,9 @@ public class GameItem : GraphNodeStorage
 {
     public TagState GetTagReadonly(string tag) { return new TagState { Value = IntTags.ContainsKey(tag) ? IntTags[tag] : 0, Text = StringTags.ContainsKey(tag) ? StringTags[tag] : null }; }
     public readonly Dictionary<string,string> StringTags = new Dictionary<string,string>();
+    public ItemFeature CigaretteFeature;
     public ItemFeature InjectorFeature;
-    public ItemFeature FindItemFeatureByCategory(string category) { return InjectorFeature; }
+    public ItemFeature FindItemFeatureByCategory(string category) { return category == "CATEGORY_GENUINE_CIGARETTE" ? CigaretteFeature : InjectorFeature; }
     public TestGridShape modifiedShape = new TestGridShape();
     public string identifier;
     public int uniqueId;
@@ -310,6 +316,12 @@ public class TestTransform { public int childCount = 8; }
 public class PaperUIManager
 {
     public static PaperUIManager Instance = new PaperUIManager();
+    public ActiveObject cigaretteGuidePanel = new ActiveObject(), cigaretteColorPanel = new ActiveObject();
+    public int CigaretteOpens, ColorOpens;
+    public void OpenCigaretteGuide() { CigaretteOpens++; cigaretteGuidePanel.activeSelf = true; }
+    public void CloseCigaretteGuide() { cigaretteGuidePanel.activeSelf = false; }
+    public void OpenCigaretteColor() { ColorOpens++; cigaretteColorPanel.activeSelf = true; }
+    public void CloseCigaretteColor() { cigaretteColorPanel.activeSelf = false; }
     public ActiveObject injectorGuidePanel = new ActiveObject();
     public int Opens, Closes;
     public void OpenInjectorGuide() { Opens++; injectorGuidePanel.activeSelf = true; }
@@ -391,9 +403,15 @@ public static class GuideRegression
         UnityEngine.Application.version = "0.46D";
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
-        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 21 &&
+        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 27 &&
             ModConfig.Instance.Key == "auto_open_appraisal_guide" && ExperienceSettings.AutoOpenAppraisalGuide,
-            "Nineteen settings plus two internal layout entries");
+            "Twenty-one settings plus six internal layout entries");
+        Check(ExperienceSettings.NightServiceInformation && ExperienceSettings.SettingsTab("night_service_information") == "general" &&
+            ModConfig.Instance.BooleanKeys.IndexOf("night_service_information") == ModConfig.Instance.BooleanKeys.IndexOf("auto_discard_appraisal_receipt") + 1,
+            "Night service information defaults on, in General immediately after receipt cleanup");
+        ModConfig.Instance.NightServiceEntry.Value = false;
+        Check(!ExperienceSettings.NightServiceInformation, "Night service information can be disabled");
+        ModConfig.Instance.NightServiceEntry.Value = true;
         Check(!ExperienceSettings.AugIdentification && ExperienceSettings.SettingsTab("aug_identification") == "automation" && !ExperienceSettings.IsAutomationSetting("aug_identification"), "Aug checkbox defaults off in automation tab without slider extras");
         Check(ModConfig.Instance.Label().StartsWith("zh:"), "Chinese config label");
         ModHelper.Language = "en";
@@ -495,6 +513,7 @@ public static class GuideRegression
         Console.WriteLine("PASS: auto-close config/mod gates, unrelated inspections, missing UI and exception isolation.");
         PlayerStore.Instance = new PlayerStore();
         InjectorInspectionRegression.Run();
+        CigaretteInspectionRegression.Run();
         StorageNamingRegression.Run(Entry);
         StorageCapacityRegression.Run(Entry);
         StolenHeatRegression.Run(Entry);

@@ -1,4 +1,4 @@
-﻿config_tab_general,General
+config_tab_general,General
 config_tab_icons,Icons
 setting_power_warning,Power warning
 setting_power_warning_tip,Show a warning on the item icon when the tool or machine has insufficient power to continue operating tonight.
@@ -25,7 +25,7 @@ setting_single_cell_value,Single-cell value
 setting_single_cell_value_tip,Show the ratio of the item's current estimated value to its occupied grid cells.
 single_cell_value_line, Single-cell value: {0}
 setting_auto_discard_receipt,Automatically discard appraisal receipts
-setting_auto_discard_receipt_tip,Automatically discard appraisal slips and market intelligence in the trash.
+setting_auto_discard_receipt_tip,Automatically discard appraisal slips / market intelligence / ordinary rumor slips / security inspection receipts in the trash.
 setting_market_change_marker,Show market changes
 setting_overflow_warning,Overflow warning
 setting_overflow_warning_tip,Show a warning on the item icon when its tool or machine is close to overflowing.
@@ -48,3 +48,16 @@ setting_aug_identification,Automatic Aug identification
 setting_aug_identification_tip,Automatically highlight the shotgun when an Aug visits.
 setting_module_affix_marker,Module affix icons
 setting_module_affix_marker_tip,Show additional affixes as icons on modules.
+setting_cigarette_automation,Hemingway cigarette pack inspection automation
+setting_cigarette_automation_tip,Automatically inspect Hemingway cigarette packs when the selected condition is met.
+cigarette_automation_level_0,Off
+cigarette_automation_level_1,Own the Hemingway guide and color chart
+cigarette_automation_level_2,Own the Hemingway guide
+cigarette_automation_level_3,Always
+setting_night_service_information,Night service information
+setting_night_service_information_tip,Show detailed information in the night services window.
+night_service_alarm,Current theft prevention:
+night_service_trash_warning,Valuable items in the trash will be removed!
+night_service_crime_value,Crime value:
+night_service_investigation,Investigation progress:
+night_service_credits, credits
