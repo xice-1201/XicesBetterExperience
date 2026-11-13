@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace XicesBetterExperience
 {
-    // Independent global layouts for the tablet and phone, shared across save slots.
+    // Independent global layouts, shared across save slots.
     public static class WindowLayoutMemory
     {
         private const string TabletId = "negociation_ui";
@@ -45,6 +45,19 @@ namespace XicesBetterExperience
         }
         private static bool IsSupported(StoreUI ui) { return IsTablet(ui) || IsPhone(ui); }
         private static string SavedLayout(StoreUI ui) { return IsTablet(ui) ? ExperienceSettings.TabletLayout : ExperienceSettings.PhoneLayout; }
+        private static bool IsWaterScanner(GameObject root)
+        {
+            WaterScannerUIManager scanner = WaterScannerUIManager.Instance;
+            return root != null && scanner != null && scanner.panel == root;
+        }
+        private static bool IsSupportedRoot(GameObject root)
+        {
+            return root != null && (IsWaterScanner(root) || IsSupported(root.GetComponent<StoreUI>()));
+        }
+        private static string SavedRootLayout(GameObject root)
+        {
+            return IsWaterScanner(root) ? ExperienceSettings.WaterScannerLayout : SavedLayout(root.GetComponent<StoreUI>());
+        }
         private static void Cancel(GameObject root)
         {
             if (root != null) pending.Remove(root);
@@ -60,14 +73,19 @@ namespace XicesBetterExperience
         {
             generation++;
             pending.Clear();
+            fixtureDragTargets.Clear();
             Canvas.willRenderCanvases -= FinishRestore;
         }
 
         internal static void QueueRestore(StoreUI ui)
         {
+            if (IsSupported(ui)) QueueRootRestore(ui.gameObject);
+        }
+
+        internal static void QueueRootRestore(GameObject root)
+        {
             Layout layout;
-            if (!Enabled || !IsSupported(ui) || !ui.gameObject.activeInHierarchy || !Layout.TryDecode(SavedLayout(ui), out layout)) return;
-            GameObject root = ui.gameObject;
+            if (!Enabled || !IsSupportedRoot(root) || !root.activeInHierarchy || !Layout.TryDecode(SavedRootLayout(root), out layout)) return;
             RestoreJob job = new RestoreJob { Root = root, Generation = generation };
             pending[root] = job;
             // Native OnEnable docks next update, then reclamps the next update.
@@ -101,9 +119,12 @@ namespace XicesBetterExperience
         {
             Layout layout;
             if (!Enabled || root == null || !root.activeInHierarchy) return;
-            StoreUI ui = root.GetComponent<StoreUI>();
-            if (!IsSupported(ui) || !Layout.TryDecode(SavedLayout(ui), out layout)) return;
-            RectTransform rect = root.transform as RectTransform;
+            if (!IsSupportedRoot(root) || !Layout.TryDecode(SavedRootLayout(root), out layout)) return;
+            RestoreRect(root.transform as RectTransform, layout);
+        }
+
+        private static void RestoreRect(RectTransform rect, Layout layout)
+        {
             RectTransform parent = rect == null ? null : rect.parent as RectTransform;
             if (parent == null || Screen.width <= 0 || Screen.height <= 0) return;
             try
@@ -155,7 +176,10 @@ namespace XicesBetterExperience
 
         public static void ConfigApplied()
         {
+            var dragTargets = new List<KeyValuePair<TreeNodeRender, PixelWindow>>(fixtureDragTargets);
             Clear();
+            foreach (var pair in dragTargets)
+                if (FixtureKind(pair.Value) != 0) fixtureDragTargets[pair.Key] = pair.Value;
             NegociationUIManager manager = NegociationUIManager.Instance;
             if (!Enabled) return;
             if (manager != null && manager.uiObject != null && manager.uiObject.activeInHierarchy)
@@ -163,9 +187,142 @@ namespace XicesBetterExperience
                 StoreUI ui = manager.uiObject.GetComponent<StoreUI>();
                 if (ui != null) ui.OnEnable();
             }
+            EmporiumEntry entry = EmporiumEntry.Instance;
+            if (entry != null)
+            {
+                RestoreFixture(entry.dossier == null ? null : entry.dossier.contentWindow);
+                RestoreFixture(entry.trashcan == null ? null : entry.trashcan.contentWindow);
+                RestoreFixture(VendingWindow(entry));
+            }
+            WaterScannerUIManager scanner = WaterScannerUIManager.Instance;
+            if (scanner != null) QueueRootRestore(scanner.panel);
             PhoneUIManager phone = PhoneUIManager.Instance;
             if (phone != null && phone.phonePanel != null && phone.phonePanel.activeInHierarchy)
                 QueueRestore(phone.phonePanel.GetComponent<StoreUI>());
+        }
+
+        internal static void CaptureWaterScanner(GameObject root)
+        {
+            if (!Enabled || restoring || !IsWaterScanner(root) || !root.activeInHierarchy || pending.ContainsKey(root) ||
+                Screen.width <= 0 || Screen.height <= 0) return;
+            RectTransform rect = root.transform as RectTransform;
+            if (rect == null) return;
+            Vector2 point = RectTransformUtility.WorldToScreenPoint(UICamera(rect), rect.position);
+            ExperienceSettings.SaveWaterScannerLayout(new Layout
+            {
+                X = point.x / Screen.width, Y = point.y / Screen.height, Zoom = 1
+            }.Encode());
+        }
+
+        [HarmonyPatch(typeof(WaterScannerUIManager), "Open", new[] { typeof(GameItem), typeof(GameItem) })]
+        public static class WaterScannerOpenPatch
+        {
+            public static void Postfix(WaterScannerUIManager __instance, GameItem water)
+            {
+                if (__instance != null && water != null) QueueRootRestore(__instance.panel);
+            }
+        }
+        [HarmonyPatch(typeof(WaterScannerUIManager), "Close", new Type[] { })]
+        public static class WaterScannerClosePatch
+        {
+            public static void Prefix(WaterScannerUIManager __instance)
+            {
+                if (__instance == null) return;
+                CaptureWaterScanner(__instance.panel);
+                Cancel(__instance.panel);
+            }
+        }
+
+        // These machinery-style grid windows have fixed native dimensions. Only position is retained.
+        private static readonly Dictionary<TreeNodeRender, PixelWindow> fixtureDragTargets = new Dictionary<TreeNodeRender, PixelWindow>();
+
+        private static PixelWindow VendingWindow(EmporiumEntry entry)
+        {
+            GameItem machine = entry == null || entry.vendingFountainElement == null ? null : entry.vendingFountainElement.childItem;
+            return machine == null ? null : machine.contentWindow;
+        }
+
+        private static int FixtureKind(PixelWindow window)
+        {
+            EmporiumEntry entry = EmporiumEntry.Instance;
+            if (window == null || entry == null) return 0;
+            if (entry.dossier != null && entry.dossier.contentWindow == window) return 1;
+            if (entry.trashcan != null && entry.trashcan.contentWindow == window) return 2;
+            if (VendingWindow(entry) == window) return 3;
+            return 0;
+        }
+
+        internal static void RestoreFixture(PixelWindow window)
+        {
+            int kind = FixtureKind(window);
+            Layout layout;
+            if (!Enabled || kind == 0 || !window.IsVisible()) return;
+            string saved = kind == 1 ? ExperienceSettings.ArchiveLayout :
+                kind == 2 ? ExperienceSettings.TrashLayout : ExperienceSettings.VendingFountainLayout;
+            if (Layout.TryDecode(saved, out layout)) RestoreRect(window.rectTransform, layout);
+        }
+
+        internal static void CaptureFixture(PixelWindow window)
+        {
+            int kind = FixtureKind(window);
+            if (!Enabled || restoring || kind == 0 || !window.IsVisible() || Screen.width <= 0 || Screen.height <= 0) return;
+            RectTransform rect = window.rectTransform;
+            Vector2 point = RectTransformUtility.WorldToScreenPoint(UICamera(rect), rect.position);
+            string value = new Layout { X = point.x / Screen.width, Y = point.y / Screen.height, Zoom = 1 }.Encode();
+            if (kind == 1) ExperienceSettings.SaveArchiveLayout(value);
+            else if (kind == 2) ExperienceSettings.SaveTrashLayout(value);
+            else ExperienceSettings.SaveVendingFountainLayout(value);
+        }
+
+        internal static void FixtureOpened(PixelWindow window, TreeNodeRender background)
+        {
+            int kind = FixtureKind(window);
+            if (kind == 0) return;
+            // Keep at most one current drag target per fixture, including after save recreation.
+            foreach (var pair in new List<KeyValuePair<TreeNodeRender, PixelWindow>>(fixtureDragTargets))
+                if (FixtureKind(pair.Value) == 0 || FixtureKind(pair.Value) == kind) fixtureDragTargets.Remove(pair.Key);
+            if (background != null) fixtureDragTargets[background] = window;
+            RestoreFixture(window);
+        }
+
+        [HarmonyPatch(typeof(PixelWindow), "Show", new Type[] { })]
+        public static class FixtureShowPatch
+        {
+            public static void Postfix(PixelWindow __instance, TreeNodeRender ___background) { FixtureOpened(__instance, ___background); }
+        }
+        [HarmonyPatch(typeof(PixelWindow), "Show", new[] { typeof(Vector2), typeof(Vector2), typeof(bool) })]
+        public static class FixtureShowAtPatch
+        {
+            public static void Postfix(PixelWindow __instance, TreeNodeRender ___background) { FixtureOpened(__instance, ___background); }
+        }
+        // The storefront click calls Show() then Center(); restore after the final native positioning.
+        [HarmonyPatch(typeof(PixelWindow), "Center", new Type[] { })]
+        public static class VendingCenterPatch
+        {
+            public static void Postfix(PixelWindow __instance)
+            {
+                if (FixtureKind(__instance) == 3) RestoreFixture(__instance);
+            }
+        }
+        [HarmonyPatch(typeof(GameItem), "RestoreContentWindowPosition", new Type[] { })]
+        public static class FixtureNativeRestorePatch
+        {
+            public static void Postfix(GameItem __instance) { RestoreFixture(__instance.contentWindow); }
+        }
+        [HarmonyPatch(typeof(PixelWindow), "Hide", new Type[] { })]
+        public static class FixtureHidePatch
+        {
+            public static void Prefix(PixelWindow __instance) { CaptureFixture(__instance); }
+        }
+        [HarmonyPatch(typeof(TreeNodeRender), "OnEndDrag", new[] { typeof(UnityEngine.EventSystems.PointerEventData) })]
+        public static class FixtureDragPatch
+        {
+            public static void Postfix(TreeNodeRender __instance, UnityEngine.EventSystems.PointerEventData eventData)
+            {
+                PixelWindow window;
+                if (eventData != null && eventData.button == UnityEngine.EventSystems.PointerEventData.InputButton.Left &&
+                    fixtureDragTargets.TryGetValue(__instance, out window)) CaptureFixture(window);
+            }
         }
 
         [HarmonyPatch(typeof(StoreUI), "GetSavedZoom", new Type[] { })]
@@ -187,6 +344,12 @@ namespace XicesBetterExperience
             public static void Postfix(UIDragHandler __instance, UnityEngine.EventSystems.PointerEventData eventData)
             {
                 if (__instance == null || eventData == null || eventData.button != UnityEngine.EventSystems.PointerEventData.InputButton.Left) return;
+                if (IsWaterScanner(__instance.gameObject))
+                {
+                    Cancel(__instance.gameObject);
+                    CaptureWaterScanner(__instance.gameObject);
+                    return;
+                }
                 StoreUI ui = __instance.GetComponent<StoreUI>();
                 if (!IsSupported(ui)) return;
                 Cancel(ui.gameObject);

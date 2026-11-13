@@ -23,6 +23,35 @@ public static class AutoDiscardAppraisalReceiptRegression
         Check(!source.childItems.Contains(receipt), "Receipt leaves its source inventory");
         Check(GraphUtils.LastTarget == trash, "Receipt is sent to the native trashcan");
         Check(trash.children.Contains(receipt), "Receipt becomes a trashcan child");
+        AutoDiscardAppraisalReceiptAroundFee.Postfix();
+
+        bool previousInspectionState;
+        AutoDiscardInspectionSlipAroundCreation.Prefix(out previousInspectionState);
+        var inspectionSlip = new GameItem();
+        source.TryAcceptAll(inspectionSlip);
+        AutoDiscardAppraisalReceipt.Postfix(inspectionSlip);
+        Check(trash.children.Contains(inspectionSlip), "Security confiscation receipt is sent to trash");
+        AutoDiscardInspectionSlipAroundCreation.Finalizer(previousInspectionState);
+        Check(!AppraisalReceiptState.CreatingInspectionSlip, "Inspection scope is cleared after creation");
+
+        AutoDiscardInspectionSlipAroundCreation.Prefix(out previousInspectionState);
+        bool nestedInspectionState;
+        AutoDiscardInspectionSlipAroundCreation.Prefix(out nestedInspectionState);
+        AutoDiscardInspectionSlipAroundCreation.Finalizer(nestedInspectionState);
+        Check(AppraisalReceiptState.CreatingInspectionSlip, "Nested creation restores outer scope");
+        // Harmony runs the finalizer even when the original method throws.
+        AutoDiscardInspectionSlipAroundCreation.Finalizer(previousInspectionState);
+        Check(!AppraisalReceiptState.CreatingInspectionSlip, "Exception cleanup restores inactive scope");
+
+        EmporiumEntry.Instance.trashcan = null;
+        AutoDiscardInspectionSlipAroundCreation.Prefix(out previousInspectionState);
+        var retainedSlip = new GameItem();
+        source.TryAcceptAll(retainedSlip);
+        AutoDiscardAppraisalReceipt.Postfix(retainedSlip);
+        AutoDiscardAppraisalReceipt.Postfix(null);
+        AutoDiscardInspectionSlipAroundCreation.Finalizer(previousInspectionState);
+        Check(retainedSlip.parentInventory == source, "Missing trashcan preserves inspection receipt");
+        EmporiumEntry.Instance.trashcan = trash;
 
         var information = new StoreEvent { identifier = "water_treatment_breakdown" };
         AutoDiscardEventSlipAroundCreation.Prefix(information);
@@ -48,6 +77,10 @@ public static class AutoDiscardAppraisalReceiptRegression
         Check(unrelated.parentInventory == source, "Unrelated item remains untouched");
 
         ModConfig.Instance.AutoDiscardReceiptEntry.Set(false);
+        AutoDiscardInspectionSlipAroundCreation.Prefix(out previousInspectionState);
+        AutoDiscardAppraisalReceipt.Postfix(unrelated);
+        AutoDiscardInspectionSlipAroundCreation.Finalizer(previousInspectionState);
+        Check(unrelated.parentInventory == source, "Disabled cleanup preserves inspection receipt");
         AutoDiscardAppraisalReceiptAroundFee.Prefix();
         AutoDiscardAppraisalReceipt.Postfix(unrelated);
         Check(unrelated.parentInventory == source, "Disabled receipt cleanup leaves items untouched");

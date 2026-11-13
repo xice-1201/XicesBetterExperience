@@ -31,15 +31,18 @@ namespace XicesBetterExperience
             ModHook.OnGameLoadedLate += RefreshLoaded;
             ModHook.OnModConfigApplied += OnConfigApplied;
             RefreshLoaded();
+            NightServiceInformation.RefreshOpen();
         }
 
         public void OnDisable()
         {
             if (!IsEnabled) return;
             IsEnabled = false;
+            NightServiceInformation.RefreshOpen();
             WindowLayoutMemory.Clear();
             AugIdentificationAutomation.Clear();
             InjectorInspectionAutomation.Restore();
+            CigaretteInspectionAutomation.Restore();
             ModHook.OnGameLoadedLate -= AugIdentificationAutomation.Clear;
             ModHook.OnGameLoadedLate -= RefreshLoaded;
             ModHook.OnModConfigApplied -= OnConfigApplied;
@@ -62,7 +65,10 @@ namespace XicesBetterExperience
         {
             if (modId != ModId || !IsEnabled) return;
             WindowLayoutMemory.ConfigApplied();
+            CigaretteInspectionAutomation.Restore();
+            InjectorInspectionAutomation.CheckSession();
             AugIdentificationAutomation.ConfigApplied();
+            NightServiceInformation.RefreshOpen();
             RefreshVisuals(false);
         }
         private sealed class VisualSettings

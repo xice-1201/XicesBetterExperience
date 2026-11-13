@@ -94,6 +94,8 @@ namespace XicesBetterExperience
 
         internal static string SelectionName(string key, int index)
         {
+            if (key == "cigarette_inspection_automation")
+                return ModHelper.GetLocalized(ModEntry.ModId, "cigarette_automation_level_" + Math.Max(0, Math.Min(3, index)));
             if (key == "injector_inspection_automation")
                 return ModHelper.GetLocalized(ModEntry.ModId, "injector_automation_level_" + Math.Max(0, Math.Min(2, index)));
             return LevelName(ExperienceSettings.AutomationLevel(key, index));

@@ -26,6 +26,7 @@ namespace XicesBetterExperience
         internal static int GetBookIndex(GameItem inspected)
         {
             if (inspected == null) return -1;
+            if (inspected.identifier == "packet_red_cigarette" && inspected.IsTag("CIGARETTE_TAG")) return -3;
             if (inspected.IsTag("INS_INJECTOR_TAG")) return -2;
             if (inspected.IsTag("HAND_TAG")) return 6;
             if (inspected.IsTag("RIBWICH_TAG")) return 4;
@@ -36,6 +37,16 @@ namespace XicesBetterExperience
         private static void OpenOwnedGuide(GameItem inspected)
         {
             int bookIndex = GetBookIndex(inspected);
+            if (bookIndex == -3)
+            {
+                PaperUIManager paper = PaperUIManager.Instance;
+                if (paper == null) return;
+                if (HealthData.CanRead() && HasOwnedGuide("cigarette_guide") && !paper.cigaretteGuidePanel.activeSelf)
+                    paper.OpenCigaretteGuide();
+                if (HasOwnedGuide("cigarette_color") && !paper.cigaretteColorPanel.activeSelf)
+                    paper.OpenCigaretteColor();
+                return;
+            }
             if (bookIndex == -2)
             {
                 if (HealthData.CanRead() && HasOwnedGuide("injector_guide") && PaperUIManager.Instance != null &&
@@ -91,6 +102,16 @@ namespace XicesBetterExperience
             if (!ModEntry.IsEnabled || !ExperienceSettings.AutoOpenAppraisalGuide || __state == -1) return;
             try
             {
+                if (__state == -3)
+                {
+                    PaperUIManager paper = PaperUIManager.Instance;
+                    if (paper != null)
+                    {
+                        if (paper.cigaretteGuidePanel.activeSelf) paper.CloseCigaretteGuide();
+                        if (paper.cigaretteColorPanel.activeSelf) paper.CloseCigaretteColor();
+                    }
+                    return;
+                }
                 if (__state == -2)
                 {
                     PaperUIManager paper = PaperUIManager.Instance;

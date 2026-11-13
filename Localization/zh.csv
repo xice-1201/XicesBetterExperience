@@ -27,7 +27,7 @@ single_cell_value_line,，单格价值：{0}
 setting_exchange_auto_pickup,地下交易自动提货
 setting_exchange_auto_pickup_tip,地下交易得到的货物自动摆放在柜台上。
 setting_auto_discard_receipt,自动清理回执
-setting_auto_discard_receipt_tip,自动将鉴定单、市场情报丢弃至垃圾桶。
+setting_auto_discard_receipt_tip,自动将鉴定单、市场情报、普通传闻纸条和治安部盘查回执丢弃至垃圾桶。
 setting_market_change_marker,市场变动显示
 setting_overflow_warning,溢出告警
 setting_overflow_warning_tip,当对应工具/机器的产物即将溢出时，在物品图标上显示警告
@@ -48,3 +48,16 @@ setting_aug_identification,自动鉴别改造体
 setting_aug_identification_tip,改造体到访时自动高亮霰弹枪
 setting_module_affix_marker,模组词条显示
 setting_module_affix_marker_tip,在模组图标上显示其附加词条。
+setting_cigarette_automation,一包海明威香烟检查自动化
+setting_cigarette_automation_tip,满足条件时，自动检查一包海明威香烟。
+cigarette_automation_level_0,不开启
+cigarette_automation_level_1,拥有海明威鉴定指南和海明威色卡
+cigarette_automation_level_2,拥有海明威鉴定指南
+cigarette_automation_level_3,总是
+setting_night_service_information,夜间服务信息
+setting_night_service_information_tip,在夜间服务窗口显示详细信息。
+night_service_alarm,当前防盗率：
+night_service_trash_warning,垃圾桶内的杂物将被清理！
+night_service_crime_value,涉案金额：
+night_service_investigation,调查进度：
+night_service_credits,信用点

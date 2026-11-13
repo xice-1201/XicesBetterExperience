@@ -12,6 +12,8 @@ $arguments = @('/define:REGRESSION_TESTS', '/nologo', '/noconfig', '/nostdlib+',
     (Join-Path $projectRoot 'src/ModEntry.cs'),
     (Join-Path $projectRoot 'src/ExperienceSettings.cs'),
     (Join-Path $projectRoot 'src/InjectorInspectionAutomation.cs'),
+    (Join-Path $projectRoot 'src/CigaretteInspectionAutomation.cs'),
+    (Join-Path $PSScriptRoot 'CigaretteInspectionRegression.cs'),
     (Join-Path $PSScriptRoot 'InjectorInspectionRegression.cs'),
     (Join-Path $projectRoot 'src/AutoOpenAppraisalGuide.cs'),
     (Join-Path $projectRoot 'src/StorageNameOverlay.cs'),
@@ -85,3 +87,16 @@ $valueArguments = @(('/reference:' + $harmonyPath), '/nologo', '/noconfig', '/no
 if ($LASTEXITCODE -ne 0) { throw 'Single cell value regression compilation failed.' }
 & $valueExe
 if ($LASTEXITCODE -ne 0) { throw 'Single cell value regression failed.' }
+
+$nightExe = Join-Path $outputPath 'NightServiceRegression.exe'
+$nightArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $nightExe),
+    ('/reference:' + (Join-Path $frameworkPath 'mscorlib.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.Core.dll')),
+    (Join-Path $projectRoot 'src/NightServiceRules.cs'),
+    (Join-Path $projectRoot 'src/NightServiceInformation.cs'),
+    (Join-Path $PSScriptRoot 'NightServiceRegression.cs'))
+& (Join-Path $UnityEditorPath 'Data/NetCoreRuntime/dotnet.exe') (Join-Path $UnityEditorPath 'Data/DotNetSdkRoslyn/csc.dll') @nightArguments
+if ($LASTEXITCODE -ne 0) { throw 'Night service regression compilation failed.' }
+& $nightExe
+if ($LASTEXITCODE -ne 0) { throw 'Night service regression failed.' }
