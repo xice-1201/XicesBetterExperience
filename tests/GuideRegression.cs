@@ -97,6 +97,7 @@ public static class ModHelper
     public static string GetLocalized(string id, string key) { return Language + ":" + id + ":" + key; }
 }
 public class GraphNodeStorage { public List<GraphNodeStorage> children = new List<GraphNodeStorage>(); }
+public static class StorageExpansionHelper { }
 public class ItemCondition { public string identifier; }
 public class ItemFeature { public ItemCondition realCondition, current; public ItemCondition GetCurrentItemCondition() { return current; } }
 public class GameItem : GraphNodeStorage
@@ -403,9 +404,9 @@ public static class GuideRegression
         UnityEngine.Application.version = "0.46D";
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
-        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 27 &&
+        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 29 &&
             ModConfig.Instance.Key == "auto_open_appraisal_guide" && ExperienceSettings.AutoOpenAppraisalGuide,
-            "Twenty-one settings plus six internal layout entries");
+            "Twenty-one settings plus seven internal layout entries");
         Check(ExperienceSettings.NightServiceInformation && ExperienceSettings.SettingsTab("night_service_information") == "general" &&
             ModConfig.Instance.BooleanKeys.IndexOf("night_service_information") == ModConfig.Instance.BooleanKeys.IndexOf("auto_discard_appraisal_receipt") + 1,
             "Night service information defaults on, in General immediately after receipt cleanup");

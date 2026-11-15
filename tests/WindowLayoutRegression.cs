@@ -76,6 +76,13 @@ public class UIDragHandler
 }
 public class NegociationUIManager {public static NegociationUIManager Instance;public UnityEngine.GameObject uiObject;}
 public class WaterScannerUIManager {public static WaterScannerUIManager Instance;public UnityEngine.GameObject panel;}
+public class InspectionUIManager {public static InspectionUIManager Instance;public UnityEngine.GameObject panel;}
+public class MultiPageUIManager {public static MultiPageUIManager Instance;public UnityEngine.GameObject panel;}
+public class PaperUIManager
+{
+    public static PaperUIManager Instance;
+    public UnityEngine.GameObject cigaretteGuidePanel, cigaretteColorPanel, foodStampGuidePanel, injectorGuidePanel, augIdGuide;
+}
 public class PhoneUIManager {public static PhoneUIManager Instance;public UnityEngine.GameObject phonePanel;}
 public class TreeNodeRender { }
 public class PixelWindow
@@ -92,6 +99,7 @@ public class EmporiumEntry
     public static EmporiumEntry Instance;
     public GameItem dossier, trashcan;
     public GameSlotInventory vendingFountainElement;
+    public GameSlotInventory vendingMachineElement;
 }
 public class PlayerStore
 {
@@ -110,10 +118,14 @@ namespace XicesBetterExperience
     public static class ExperienceSettings
     {
         public static bool RetainWindowLayout=true;
+        public static string InspectionLayouts="";
+        public static void SaveInspectionLayouts(string value) {if(value!=InspectionLayouts){InspectionLayouts=value;Writes++;}}
         public static string ArchiveLayout="", TrashLayout="";
         public static void SaveArchiveLayout(string value) {if(value!=ArchiveLayout){ArchiveLayout=value;Writes++;}}
         public static void SaveTrashLayout(string value) {if(value!=TrashLayout){TrashLayout=value;Writes++;}}
         public static string VendingFountainLayout="";
+        public static string VendingMachineLayout="";
+        public static void SaveVendingMachineLayout(string value) {if(value!=VendingMachineLayout){VendingMachineLayout=value;Writes++;}}
         public static void SaveVendingFountainLayout(string value) {if(value!=VendingFountainLayout){VendingFountainLayout=value;Writes++;}}
         public static string WaterScannerLayout="";
         public static void SaveWaterScannerLayout(string value) {if(value!=WaterScannerLayout){WaterScannerLayout=value;Writes++;}}
@@ -242,6 +254,36 @@ public static class WindowLayoutRegression
         Check(UnityEngine.Canvas.Subscriptions==0,"Absent vending machine safe and no idle render hook");
         Console.WriteLine("PASS: vending fountain independent layout, final native centering order, drag/close persistence, scene recreation, config gates, absent fixtures and unrelated-window exclusion.");
     }
+    static void VendingMachineTests()
+    {
+        WindowLayoutMemory.Clear();
+        string fountain=ExperienceSettings.VendingFountainLayout;
+        var window=new PixelWindow(); var drag=new TreeNodeRender();
+        EmporiumEntry.Instance=new EmporiumEntry {vendingMachineElement=new GameSlotInventory {childItem=new GameItem {contentWindow=window}}};
+        window.rectTransform.position=new UnityEngine.Vector3(700,400,0);
+        WindowLayoutMemory.FixtureShowPatch.Postfix(window,drag);
+        WindowLayoutMemory.FixtureDragPatch.Postfix(drag,new UnityEngine.EventSystems.PointerEventData());
+        Check(ExperienceSettings.VendingMachineLayout!="" && ExperienceSettings.VendingFountainLayout==fountain,"Vending machine drag saves independently of water fountain");
+        window.rectTransform.position=new UnityEngine.Vector3(960,540,0);
+        WindowLayoutMemory.VendingCenterPatch.Postfix(window);
+        Check(Math.Abs(window.rectTransform.position.x-700)<.01,"Vending machine restores after native Center");
+        window.rectTransform.position=new UnityEngine.Vector3(750,420,0);
+        WindowLayoutMemory.FixtureHidePatch.Prefix(window);
+        WindowLayoutMemory.Clear(); window=new PixelWindow();
+        EmporiumEntry.Instance=new EmporiumEntry {vendingMachineElement=new GameSlotInventory {childItem=new GameItem {contentWindow=window}}};
+        WindowLayoutMemory.FixtureShowPatch.Postfix(window,drag);
+        Check(Math.Abs(window.rectTransform.position.x-750)<.01 && window.rectTransform.Width==400,"Vending machine restores across scene recreation without resizing");
+        ExperienceSettings.RetainWindowLayout=false; WindowLayoutMemory.ConfigApplied();
+        window.rectTransform.position=new UnityEngine.Vector3(960,540,0); WindowLayoutMemory.VendingCenterPatch.Postfix(window);
+        Check(window.rectTransform.position.x==960,"Disabled vending machine retains native position");
+        ExperienceSettings.RetainWindowLayout=true; WindowLayoutMemory.ConfigApplied();
+        Check(Math.Abs(window.rectTransform.position.x-750)<.01,"Re-enabling restores open vending machine");
+        string saved=ExperienceSettings.VendingMachineLayout;
+        window.Root.activeInHierarchy=false; WindowLayoutMemory.CaptureFixture(window);
+        Check(saved==ExperienceSettings.VendingMachineLayout && fountain==ExperienceSettings.VendingFountainLayout,"Hidden vending machine cannot overwrite either record");
+        EmporiumEntry.Instance=new EmporiumEntry(); WindowLayoutMemory.Clear();
+        Console.WriteLine("PASS: vending machine independent position, drag/close capture, final native center, scene recreation, native size and config gates.");
+    }
     static UnityEngine.GameObject ScannerPanel()
     {
         var root=new UnityEngine.GameObject();root.transform.parent=new UnityEngine.GameObject().transform;
@@ -299,7 +341,88 @@ public static class WindowLayoutRegression
         Check(ExperienceSettings.Writes==writes&&UnityEngine.Canvas.Subscriptions==0,"Scanner adds no idle polling or writes");
         Console.WriteLine("PASS: water scanner panel without StoreUI, independent global position, docking, close/reopen, save recreation, failed scans, config/mod gates, invalid data, resolution and zero idle work.");
     }
+    static StoreUI InspectionUI(string id)
+    {
+        var ui=Create();ui.identifier=id;return ui;
+    }
+    static void OpenBook(int index)
+    {
+        var multi=MultiPageUIManager.Instance;
+        WindowLayoutMemory.GuideOpenPatch.Prefix(multi,index);
+        multi.panel.activeInHierarchy=true;
+        WindowLayoutMemory.GuideOpenPatch.Postfix(multi);
+    }
+    static void InspectionTests()
+    {
+        WindowLayoutMemory.Clear();ExperienceSettings.InspectionLayouts="";
+        var inspection=InspectionUI("");
+        InspectionUIManager.Instance=new InspectionUIManager {panel=inspection.gameObject};
+        inspection.OnEnable();WindowLayoutMemory.InspectionOpenPatch.Postfix(InspectionUIManager.Instance);Flush();
+        At(inspection,400,400,1,"Inspection without record keeps native layout");
+        Drag(inspection,700,500);
+        WindowLayoutMemory.InspectionClosePatch.Prefix(InspectionUIManager.Instance);
+        WindowLayoutMemory.InspectionDisablePatch.Prefix(inspection);inspection.gameObject.activeInHierarchy=false;
+        inspection.gameObject.activeInHierarchy=true;inspection.OnEnable();
+        inspection.transform.position=new UnityEngine.Vector3(100,100,0);Flush();
+        At(inspection,700,500,1,"Inspection and its child appraisal panel restore after native reset");
+        var book=InspectionUI("multi_page");book.gameObject.activeInHierarchy=false;
+        MultiPageUIManager.Instance=new MultiPageUIManager {panel=book.gameObject};
+        OpenBook(6);Flush();Drag(book,900,550);
+        PlayerStore.Instance.storeUIZoomLevels["multi_page"]=3;book.transform.Scale=.75f;
+        WindowLayoutMemory.ZoomChangedPatch.Postfix(book);
+        OpenBook(4);Flush();Drag(book,1200,600);
+        PlayerStore.Instance.storeUIZoomLevels["multi_page"]=2;book.transform.Scale=.5f;
+        WindowLayoutMemory.ZoomChangedPatch.Postfix(book);
+        OpenBook(6);book.transform.position=new UnityEngine.Vector3(100,100,0);Flush();
+        At(book,900,550,.75f,"Hand guide restores independent position and zoom after switching books");
+        OpenBook(4);Flush();At(book,1200,600,.5f,"Ribwich guide has its own layout");
+        // Pending jobs from the old book must never overwrite the next book's layout.
+        OpenBook(6);LetterboxManager.Update();OpenBook(4);Flush();At(book,1200,600,.5f,"Rapid guide switching restores only final book");
+        WindowLayoutMemory.GuideClosePatch.Prefix(MultiPageUIManager.Instance);
+        WindowLayoutMemory.InspectionDisablePatch.Prefix(book);book.gameObject.activeInHierarchy=false;
+        OpenBook(6);WindowLayoutMemory.InspectionDisablePatch.Prefix(book);book.gameObject.activeInHierarchy=false;Flush();
+        OpenBook(6);Flush();At(book,900,550,.75f,"Quick guide close preserves previous layout");
+        var cigarette=InspectionUI("cig_guide");var color=InspectionUI("");var stamp=InspectionUI("stamp_guide");
+        var injector=InspectionUI("injector_guide");var aug=InspectionUI("aug_guide");
+        PaperUIManager.Instance=new PaperUIManager {cigaretteGuidePanel=cigarette.gameObject,cigaretteColorPanel=color.gameObject,
+            foodStampGuidePanel=stamp.gameObject,injectorGuidePanel=injector.gameObject,augIdGuide=aug.gameObject};
+        int x=600;
+        foreach(var ui in new[]{cigarette,color,stamp,injector,aug})
+        {
+            ui.OnEnable();Flush();Drag(ui,x,450);
+            PlayerStore.Instance.storeUIZoomLevels[ui.identifier]=3;ui.transform.Scale=.75f;
+            WindowLayoutMemory.ZoomChangedPatch.Postfix(ui);
+            WindowLayoutMemory.InspectionDisablePatch.Prefix(ui);ui.gameObject.activeInHierarchy=false;
+            ui.gameObject.activeInHierarchy=true;ui.OnEnable();ui.transform.position=new UnityEngine.Vector3(100,100,0);Flush();
+            At(ui,x,450,.75f,"Each paper guide restores independent position/zoom");x+=150;
+        }
+        var unrelated=InspectionUI("cig_guide");int writes=ExperienceSettings.Writes;
+        Drag(unrelated,1600,600);Check(writes==ExperienceSettings.Writes,"Identifier spoof alone cannot opt unrelated window in");
+        string saved=ExperienceSettings.InspectionLayouts;
+        ExperienceSettings.RetainWindowLayout=false;WindowLayoutMemory.ConfigApplied();Drag(book,300,300);
+        Drag(cigarette,300,300);Check(saved==ExperienceSettings.InspectionLayouts,"Disabled setting blocks guide captures");
+        ExperienceSettings.RetainWindowLayout=true;WindowLayoutMemory.ConfigApplied();Flush();
+        At(book,900,550,.75f,"Re-enable retains active guide identity and restores zoom");At(cigarette,600,450,.75f,"Re-enable restores paper guides");
+        WindowLayoutMemory.Clear();PlayerStore.Instance=new PlayerStore();
+        inspection=InspectionUI("");InspectionUIManager.Instance=new InspectionUIManager {panel=inspection.gameObject};
+        inspection.OnEnable();Flush();At(inspection,700,500,1,"Inspection layout survives recreated managers and empty save");
+        book=InspectionUI("multi_page");book.gameObject.activeInHierarchy=false;
+        MultiPageUIManager.Instance=new MultiPageUIManager {panel=book.gameObject};OpenBook(6);Flush();
+        At(book,900,550,.75f,"Guide layout survives recreation with no native zoom record");
+        UnityEngine.Screen.width=960;UnityEngine.Screen.height=540;OpenBook(6);Flush();At(book,450,275,.75f,"Guide uses normalized coordinates on resolution change");
+        UnityEngine.Screen.width=1920;UnityEngine.Screen.height=1080;
+        ExperienceSettings.InspectionLayouts="book_6=NaN;0;1";book.transform.position=new UnityEngine.Vector3(300,300,0);OpenBook(6);Flush();
+        Check(book.transform.position.x==300,"Malformed guide record leaves native position intact");
+        ExperienceSettings.InspectionLayouts=saved;WindowLayoutMemory.Clear();writes=ExperienceSettings.Writes;
+        for(int i=0;i<100;i++){LetterboxManager.Update();UnityEngine.Canvas.Render();}
+        Check(ExperienceSettings.Writes==writes&&UnityEngine.Canvas.Subscriptions==0,"No inspection idle writes/render subscription");
+        Console.WriteLine("PASS: inspection/appraisal root, independent guide positions and zoom, guide switching, quick close, exact identities, configuration gates, recreation, bounds and idle cleanup.");
+    }
     public static void Main()
+    {
+        try { Run(); } catch(Exception error) { Console.WriteLine("FAIL: " + error.Message); Environment.Exit(1); }
+    }
+    static void Run()
     {
         var ui=Create();ui.OnEnable();Flush();At(ui,400,400,1,"No saved layout preserves native defaults");
         Drag(ui,800,500);
@@ -379,8 +502,10 @@ public static class WindowLayoutRegression
         Check(ExperienceSettings.PhoneLayout==phoneSaved,"Blank identifier alone does not identify phone");
         WindowLayoutMemory.Clear();
         Check(UnityEngine.Canvas.Subscriptions==0,"No phone idle render subscription");
+        InspectionTests();
         FixtureTests();
         VendingTests();
+        VendingMachineTests();
         try { WaterScannerTests(); }
         catch (Exception error) { Console.WriteLine("FAIL water scanner: " + error.Message); Environment.Exit(1); }
         Console.WriteLine("PASS: phone global layout, independent records, concurrent restoration, quick close, disabled gates, exact panel identity; tablet global layout, scene/config reload, new saves, zoom continuity, docking order, quick close, gates, locale, bounds and zero idle writes.");

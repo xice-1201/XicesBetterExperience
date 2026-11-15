@@ -183,6 +183,11 @@ namespace XicesBetterExperience
         }
     }
 
+    // Type setters validate before updating itemTypes. Refresh after the entire
+    // liquid type transition so stationary containers cannot retain the old arrow.
+    [HarmonyPatch(typeof(WaterHelper), "UpdateContainerGoodType", new[] { typeof(GameItem) })]
+    public static class MarketChangeLiquidTypePatch { public static void Postfix(GameItem __0) { MarketChangeMarker.Refresh(__0); } }
+
     [HarmonyPatch(typeof(GameItemElement), "ValidateSelect", new[] { typeof(bool) })]
     public static class MarketChangeValidatePatch { public static void Postfix(GameItemElement __instance) { MarketChangeMarker.Refresh(__instance); } }
 

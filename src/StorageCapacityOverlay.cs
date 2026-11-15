@@ -91,6 +91,16 @@ namespace XicesBetterExperience
             }
         }
 
+        internal static void RefreshCapacity(GameItem item)
+        {
+            var element = item as GameItemElement;
+            if (element == null) return;
+            Overlay overlay;
+            if (overlays.TryGetValue(element, out overlay)) overlay.HasRatio = false;
+            dirty.Remove(element);
+            Refresh(element);
+        }
+
         public static void Refresh(GameItem item)
         {
             var element = item as GameItemElement;
@@ -201,6 +211,16 @@ namespace XicesBetterExperience
             foreach (var item in items) Refresh(item);
         }
     }
+
+    // New grids are initialized before they belong to the storage. Invalidate
+    // only after the native operation has attached all expansion pages.
+    [HarmonyPatch(typeof(StorageExpansionHelper), "Expand", new[] { typeof(GameItem), typeof(GameItem) })]
+    public static class StorageCapacityExpansionPatch
+    { public static void Postfix(GameItem __0) { StorageCapacityOverlay.RefreshCapacity(__0); } }
+
+    [HarmonyPatch(typeof(StorageExpansionHelper), "RestoreTabs", new[] { typeof(GameItem) })]
+    public static class StorageCapacityRestoreTabsPatch
+    { public static void Postfix(GameItem __0) { StorageCapacityOverlay.RefreshCapacity(__0); } }
 
     [HarmonyPatch(typeof(GameItemElement), "ValidateSelect", new[] { typeof(bool) })]
     public static class StorageCapacityValidatePatch
