@@ -11,7 +11,8 @@ namespace XicesBetterExperience
     {
         private const string TabletId = "negociation_ui";
         private static int generation;
-        private sealed class RestoreJob { public GameObject Root; public int Generation; public bool Ready; }
+        private static int guideIndex = -1;
+        private sealed class RestoreJob { public GameObject Root; public int Generation; public string Key; public bool Ready; }
         private static readonly Dictionary<GameObject, RestoreJob> pending = new Dictionary<GameObject, RestoreJob>();
         private static bool restoring;
         private static bool Enabled { get { return ModEntry.IsEnabled && ExperienceSettings.RetainWindowLayout; } }
@@ -43,8 +44,54 @@ namespace XicesBetterExperience
             PhoneUIManager phone = PhoneUIManager.Instance;
             return ui != null && phone != null && phone.phonePanel == ui.gameObject;
         }
-        private static bool IsSupported(StoreUI ui) { return IsTablet(ui) || IsPhone(ui); }
-        private static string SavedLayout(StoreUI ui) { return IsTablet(ui) ? ExperienceSettings.TabletLayout : ExperienceSettings.PhoneLayout; }
+        // Bind to manager-owned roots, never generic identifiers or window names.
+        private static IEnumerable<KeyValuePair<string, GameObject>> InspectionRoots()
+        {
+            var inspection = InspectionUIManager.Instance;
+            if (inspection != null) yield return new KeyValuePair<string, GameObject>("inspection", inspection.panel);
+            var multi = MultiPageUIManager.Instance;
+            if (multi != null && guideIndex >= 0) yield return new KeyValuePair<string, GameObject>("book_" + guideIndex, multi.panel);
+            var paper = PaperUIManager.Instance;
+            if (paper == null) yield break;
+            yield return new KeyValuePair<string, GameObject>("cigarette", paper.cigaretteGuidePanel);
+            yield return new KeyValuePair<string, GameObject>("color", paper.cigaretteColorPanel);
+            yield return new KeyValuePair<string, GameObject>("stamp", paper.foodStampGuidePanel);
+            yield return new KeyValuePair<string, GameObject>("injector", paper.injectorGuidePanel);
+            yield return new KeyValuePair<string, GameObject>("aug", paper.augIdGuide);
+        }
+        private static string InspectionKey(GameObject root)
+        {
+            if (root != null) foreach (var pair in InspectionRoots()) if (pair.Value == root) return pair.Key;
+            return null;
+        }
+        private static string ReadInspectionLayout(string key)
+        {
+            if (key != null) foreach (string entry in ExperienceSettings.InspectionLayouts.Split('|'))
+            {
+                int separator = entry.IndexOf('=');
+                if (separator > 0 && entry.Substring(0, separator) == key) return entry.Substring(separator + 1);
+            }
+            return "";
+        }
+        private static void SaveInspectionLayout(string key, string value)
+        {
+            var entries = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            foreach (string entry in ExperienceSettings.InspectionLayouts.Split('|'))
+            {
+                int separator = entry.IndexOf('=');
+                if (separator > 0) entries[entry.Substring(0, separator)] = entry.Substring(separator + 1);
+            }
+            entries[key] = value;
+            var encoded = new List<string>();
+            foreach (var entry in entries) encoded.Add(entry.Key + "=" + entry.Value);
+            ExperienceSettings.SaveInspectionLayouts(String.Join("|", encoded.ToArray()));
+        }
+        private static bool IsSupported(StoreUI ui) { return ui != null && (IsTablet(ui) || IsPhone(ui) || InspectionKey(ui.gameObject) != null); }
+        private static string SavedLayout(StoreUI ui)
+        {
+            return IsTablet(ui) ? ExperienceSettings.TabletLayout : IsPhone(ui) ? ExperienceSettings.PhoneLayout :
+                ui == null ? "" : ReadInspectionLayout(InspectionKey(ui.gameObject));
+        }
         private static bool IsWaterScanner(GameObject root)
         {
             WaterScannerUIManager scanner = WaterScannerUIManager.Instance;
@@ -74,6 +121,7 @@ namespace XicesBetterExperience
             generation++;
             pending.Clear();
             fixtureDragTargets.Clear();
+            guideIndex = -1;
             Canvas.willRenderCanvases -= FinishRestore;
         }
 
@@ -86,7 +134,7 @@ namespace XicesBetterExperience
         {
             Layout layout;
             if (!Enabled || !IsSupportedRoot(root) || !root.activeInHierarchy || !Layout.TryDecode(SavedRootLayout(root), out layout)) return;
-            RestoreJob job = new RestoreJob { Root = root, Generation = generation };
+            RestoreJob job = new RestoreJob { Root = root, Generation = generation, Key = InspectionKey(root) };
             pending[root] = job;
             // Native OnEnable docks next update, then reclamps the next update.
             // Restore before rendering only after both operations have completed.
@@ -111,7 +159,7 @@ namespace XicesBetterExperience
             {
                 if (!job.Ready) continue;
                 pending.Remove(job.Root);
-                Restore(job.Root);
+                if (job.Key == InspectionKey(job.Root)) Restore(job.Root);
             }
         }
 
@@ -162,14 +210,15 @@ namespace XicesBetterExperience
                 Layout old;
                 int zoom = Layout.TryDecode(SavedLayout(ui), out old) ? old.Zoom : 1;
                 int nativeZoom;
-                if (IsTablet(ui) && (zoomChanged || String.IsNullOrEmpty(ExperienceSettings.TabletLayout)) && PlayerStore.IsInstanceExist() &&
-                    PlayerStore.Instance.storeUIZoomLevels != null && PlayerStore.Instance.storeUIZoomLevels.TryGetValue(TabletId, out nativeZoom))
+                if ((IsTablet(ui) || InspectionKey(ui.gameObject) != null) && (zoomChanged || String.IsNullOrEmpty(SavedLayout(ui))) && PlayerStore.IsInstanceExist() &&
+                    PlayerStore.Instance.storeUIZoomLevels != null && PlayerStore.Instance.storeUIZoomLevels.TryGetValue(ui.identifier ?? "", out nativeZoom))
                     zoom = Math.Max(1, Math.Min(3, nativeZoom));
                 Vector2 point = RectTransformUtility.WorldToScreenPoint(UICamera(rect), rect.position);
                 Layout layout = new Layout { X = point.x / Screen.width, Y = point.y / Screen.height, Zoom = zoom };
                 if (zoomChanged) Cancel(ui.gameObject);
                 if (IsTablet(ui)) ExperienceSettings.SaveTabletLayout(layout.Encode());
-                else ExperienceSettings.SavePhoneLayout(layout.Encode());
+                else if (IsPhone(ui)) ExperienceSettings.SavePhoneLayout(layout.Encode());
+                else SaveInspectionLayout(InspectionKey(ui.gameObject), layout.Encode());
             }
             catch (Exception error) { Debug.LogError("[XicesBetterExperience] Could not save window layout: " + error); }
         }
@@ -177,7 +226,9 @@ namespace XicesBetterExperience
         public static void ConfigApplied()
         {
             var dragTargets = new List<KeyValuePair<TreeNodeRender, PixelWindow>>(fixtureDragTargets);
+            int currentGuide = guideIndex;
             Clear();
+            guideIndex = currentGuide;
             foreach (var pair in dragTargets)
                 if (FixtureKind(pair.Value) != 0) fixtureDragTargets[pair.Key] = pair.Value;
             NegociationUIManager manager = NegociationUIManager.Instance;
@@ -193,7 +244,15 @@ namespace XicesBetterExperience
                 RestoreFixture(entry.dossier == null ? null : entry.dossier.contentWindow);
                 RestoreFixture(entry.trashcan == null ? null : entry.trashcan.contentWindow);
                 RestoreFixture(VendingWindow(entry));
+                RestoreFixture(VendingMachineWindow(entry));
             }
+            foreach (var pair in InspectionRoots())
+                if (pair.Value != null && pair.Value.activeInHierarchy)
+                {
+                    var ui = pair.Value.GetComponent<StoreUI>();
+                    if (ui != null) ui.OnEnable();
+                    else QueueRootRestore(pair.Value);
+                }
             WaterScannerUIManager scanner = WaterScannerUIManager.Instance;
             if (scanner != null) QueueRootRestore(scanner.panel);
             PhoneUIManager phone = PhoneUIManager.Instance;
@@ -242,6 +301,12 @@ namespace XicesBetterExperience
             return machine == null ? null : machine.contentWindow;
         }
 
+        private static PixelWindow VendingMachineWindow(EmporiumEntry entry)
+        {
+            GameItem machine = entry == null || entry.vendingMachineElement == null ? null : entry.vendingMachineElement.childItem;
+            return machine == null ? null : machine.contentWindow;
+        }
+
         private static int FixtureKind(PixelWindow window)
         {
             EmporiumEntry entry = EmporiumEntry.Instance;
@@ -249,6 +314,7 @@ namespace XicesBetterExperience
             if (entry.dossier != null && entry.dossier.contentWindow == window) return 1;
             if (entry.trashcan != null && entry.trashcan.contentWindow == window) return 2;
             if (VendingWindow(entry) == window) return 3;
+            if (VendingMachineWindow(entry) == window) return 4;
             return 0;
         }
 
@@ -258,7 +324,7 @@ namespace XicesBetterExperience
             Layout layout;
             if (!Enabled || kind == 0 || !window.IsVisible()) return;
             string saved = kind == 1 ? ExperienceSettings.ArchiveLayout :
-                kind == 2 ? ExperienceSettings.TrashLayout : ExperienceSettings.VendingFountainLayout;
+                kind == 2 ? ExperienceSettings.TrashLayout : kind == 3 ? ExperienceSettings.VendingFountainLayout : ExperienceSettings.VendingMachineLayout;
             if (Layout.TryDecode(saved, out layout)) RestoreRect(window.rectTransform, layout);
         }
 
@@ -271,7 +337,8 @@ namespace XicesBetterExperience
             string value = new Layout { X = point.x / Screen.width, Y = point.y / Screen.height, Zoom = 1 }.Encode();
             if (kind == 1) ExperienceSettings.SaveArchiveLayout(value);
             else if (kind == 2) ExperienceSettings.SaveTrashLayout(value);
-            else ExperienceSettings.SaveVendingFountainLayout(value);
+            else if (kind == 3) ExperienceSettings.SaveVendingFountainLayout(value);
+            else ExperienceSettings.SaveVendingMachineLayout(value);
         }
 
         internal static void FixtureOpened(PixelWindow window, TreeNodeRender background)
@@ -301,7 +368,8 @@ namespace XicesBetterExperience
         {
             public static void Postfix(PixelWindow __instance)
             {
-                if (FixtureKind(__instance) == 3) RestoreFixture(__instance);
+                int kind = FixtureKind(__instance);
+                if (kind == 3 || kind == 4) RestoreFixture(__instance);
             }
         }
         [HarmonyPatch(typeof(GameItem), "RestoreContentWindowPosition", new Type[] { })]
@@ -331,7 +399,61 @@ namespace XicesBetterExperience
             public static void Postfix(StoreUI __instance, ref int __result)
             {
                 Layout layout;
-                if (Enabled && IsTablet(__instance) && Layout.TryDecode(ExperienceSettings.TabletLayout, out layout)) __result = layout.Zoom;
+                if (Enabled && IsSupported(__instance) && !IsPhone(__instance) && Layout.TryDecode(SavedLayout(__instance), out layout)) __result = layout.Zoom;
+            }
+        }
+        [HarmonyPatch(typeof(StoreUI), "OnDisable", new Type[] { })]
+        public static class InspectionDisablePatch
+        {
+            public static void Prefix(StoreUI __instance)
+            {
+                if (__instance == null || InspectionKey(__instance.gameObject) == null) return;
+                // Drag and zoom are saved immediately. Only cancel unfinished restores here;
+                // inactive parents and scene teardown must never overwrite a valid record.
+                Cancel(__instance.gameObject);
+            }
+        }
+        [HarmonyPatch(typeof(InspectionUIManager), "OpenUI", new Type[] { })]
+        public static class InspectionOpenPatch
+        {
+            public static void Postfix(InspectionUIManager __instance) { if (__instance != null) QueueRootRestore(__instance.panel); }
+        }
+        [HarmonyPatch(typeof(InspectionUIManager), "CloseUI", new Type[] { })]
+        public static class InspectionClosePatch
+        {
+            public static void Prefix(InspectionUIManager __instance)
+            {
+                if (__instance == null || __instance.panel == null) return;
+                Capture(__instance.panel.GetComponent<StoreUI>(), false);
+                Cancel(__instance.panel);
+            }
+        }
+        [HarmonyPatch(typeof(MultiPageUIManager), "OpenUI", new[] { typeof(int) })]
+        public static class GuideOpenPatch
+        {
+            public static void Prefix(MultiPageUIManager __instance, int __0)
+            {
+                if (__instance == null || __instance.panel == null) return;
+                Cancel(__instance.panel);
+                guideIndex = __0;
+            }
+            public static void Postfix(MultiPageUIManager __instance)
+            {
+                if (__instance == null || __instance.panel == null) return;
+                // SetActive(true) does not call OnEnable when switching an already-open book.
+                var ui = __instance.panel.GetComponent<StoreUI>();
+                if (ui != null) ui.OnEnable();
+                QueueRootRestore(__instance.panel);
+            }
+        }
+        [HarmonyPatch(typeof(MultiPageUIManager), "CloseUI", new Type[] { })]
+        public static class GuideClosePatch
+        {
+            public static void Prefix(MultiPageUIManager __instance)
+            {
+                if (__instance == null || __instance.panel == null) return;
+                Capture(__instance.panel.GetComponent<StoreUI>(), false);
+                Cancel(__instance.panel);
             }
         }
         [HarmonyPatch(typeof(StoreUI), "OnEnable", new Type[] { })]

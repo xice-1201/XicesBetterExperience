@@ -16,6 +16,21 @@ public static class MarketChangeRegression
         Check(ExperienceSettings.MarketChangeMarker && ModConfig.Instance.MarketChangeEntry.Value,
             "Market change marker defaults on");
         entry.OnEnable();
+        CommissaryData.Modifiers.Clear();
+        CommissaryData.Modifiers["HOUSEHOLD_GOOD"] = -35;
+        CommissaryData.Modifiers["WATER"] = 35;
+        var bucket = new GameItemElement(); bucket.Types.Add("HOUSEHOLD_GOOD");
+        MarketChangeMarker.Refresh(bucket);
+        var bucketGraphic = StatusTest.Graphic(Nodes(bucket)[0]);
+        Check(bucketGraphic.Triangles[6].Color.g > bucketGraphic.Triangles[6].Color.r, "Empty bucket follows household decline");
+        bucket.Types.Clear(); bucket.Types.Add("WATER");
+        MarketChangeLiquidTypePatch.Postfix(bucket);
+        Check(bucketGraphic.enabled && bucketGraphic.Triangles[6].Color.r > bucketGraphic.Triangles[6].Color.g,
+            "Filling stationary bucket refreshes to water increase without dragging");
+        bucket.Types.Clear(); bucket.Types.Add("HOUSEHOLD_GOOD");
+        MarketChangeLiquidTypePatch.Postfix(bucket);
+        Check(bucketGraphic.Triangles[6].Color.g > bucketGraphic.Triangles[6].Color.r, "Emptying stationary bucket restores household decline");
+        MarketChangeMarker.Remove(bucket);
         // A fresh size isolates the shared cache from earlier scenarios.
         UISettings.current.gridSize = 82;
         CommissaryData.Modifiers.Clear(); CommissaryData.Modifiers["WEAPON"] = 35;

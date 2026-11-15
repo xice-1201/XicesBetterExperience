@@ -7,8 +7,16 @@ namespace XicesBetterExperience
         private static ConfigEntry<bool> autoOpenAppraisalGuide;
         private static ConfigEntry<bool> retainWindowLayout;
         private static ConfigEntry<string> tabletLayout;
+        private static ConfigEntry<string> inspectionLayouts;
+        internal const string InspectionLayoutsKey = "internal_inspection_layouts_v1";
+        internal static string InspectionLayouts { get { return inspectionLayouts == null ? "" : inspectionLayouts.Value; } }
+        internal static void SaveInspectionLayouts(string value) { if (inspectionLayouts != null) inspectionLayouts.Set(value); }
         private static ConfigEntry<string> phoneLayout;
         private static ConfigEntry<string> vendingFountainLayout;
+        private static ConfigEntry<string> vendingMachineLayout;
+        internal const string VendingMachineLayoutKey = "internal_vending_machine_layout_v1";
+        internal static string VendingMachineLayout { get { return vendingMachineLayout == null ? "" : vendingMachineLayout.Value; } }
+        internal static void SaveVendingMachineLayout(string value) { if (vendingMachineLayout != null) vendingMachineLayout.Set(value); }
         internal const string VendingFountainLayoutKey = "internal_vending_fountain_layout_v1";
         internal static string VendingFountainLayout { get { return vendingFountainLayout == null ? "" : vendingFountainLayout.Value; } }
         internal static void SaveVendingFountainLayout(string value) { if (vendingFountainLayout != null) vendingFountainLayout.Set(value); }
@@ -31,7 +39,7 @@ namespace XicesBetterExperience
         public static bool RetainWindowLayout { get { return retainWindowLayout == null || retainWindowLayout.Value; } }
         internal static string TabletLayout { get { return tabletLayout == null ? "" : tabletLayout.Value; } }
         internal static void SaveTabletLayout(string value) { if (tabletLayout != null) tabletLayout.Set(value); }
-        internal static bool IsInternalSetting(string key) { return key == TabletLayoutKey || key == PhoneLayoutKey || key == ArchiveLayoutKey || key == TrashLayoutKey || key == WaterScannerLayoutKey || key == VendingFountainLayoutKey; }
+        internal static bool IsInternalSetting(string key) { return key == InspectionLayoutsKey || key == TabletLayoutKey || key == PhoneLayoutKey || key == ArchiveLayoutKey || key == TrashLayoutKey || key == WaterScannerLayoutKey || key == VendingFountainLayoutKey || key == VendingMachineLayoutKey; }
         private static ConfigEntry<bool> storageNaming;
         private static ConfigEntry<bool> storageCapacity;
         public static bool StorageCapacity { get { return storageCapacity == null || storageCapacity.Value; } }
@@ -201,10 +209,12 @@ namespace XicesBetterExperience
                 "market_change_marker", true, "", Text("setting_market_change_marker"), Text("setting_market_change_marker_tip"));
             moduleAffixMarker = ModConfig.For(ModEntry.ModId).Define(
                 "module_affix_marker", true, "", Text("setting_module_affix_marker"), Text("setting_module_affix_marker_tip"));
+            inspectionLayouts = ModConfig.For(ModEntry.ModId).Define(InspectionLayoutsKey, "", "Internal", () => InspectionLayoutsKey);
             tabletLayout = ModConfig.For(ModEntry.ModId).Define(TabletLayoutKey, "", "Internal", () => TabletLayoutKey);
             archiveLayout = ModConfig.For(ModEntry.ModId).Define(ArchiveLayoutKey, "", "Internal", () => ArchiveLayoutKey);
             trashLayout = ModConfig.For(ModEntry.ModId).Define(TrashLayoutKey, "", "Internal", () => TrashLayoutKey);
             vendingFountainLayout = ModConfig.For(ModEntry.ModId).Define(VendingFountainLayoutKey, "", "Internal", () => VendingFountainLayoutKey);
+            vendingMachineLayout = ModConfig.For(ModEntry.ModId).Define(VendingMachineLayoutKey, "", "Internal", () => VendingMachineLayoutKey);
             waterScannerLayout = ModConfig.For(ModEntry.ModId).Define(WaterScannerLayoutKey, "", "Internal", () => WaterScannerLayoutKey);
             phoneLayout = ModConfig.For(ModEntry.ModId).Define(PhoneLayoutKey, "", "Internal", () => PhoneLayoutKey);
         }

@@ -15,6 +15,32 @@ public static class StorageCapacityRegression
         entry.OnEnable();
         Check(ExperienceSettings.StorageCapacity && ModConfig.Instance.CapacityEntry.Value, "Capacity defaults on");
         Check(ExperienceSettings.SettingsTab("storage_capacity") == "icons", "Capacity belongs to icon tab");
+        foreach (int added in new[] { 1, 2 })
+        {
+            var bay = new GameItemElement { identifier="storage_bay", Owned=true };
+            var original = new GameGridInventory { Owner=bay };
+            bay.children.Add(original);
+            var cargo = new GameItemElement(); cargo.modifiedShape.maxX=4; cargo.modifiedShape.maxY=9;
+            original.UncheckedAccept(cargo);
+            StorageCapacityOverlay.Refresh(bay);
+            var before = Nodes(bay);
+            Check(before[1].text.text=="50.00%", "Cache capacity before expansion");
+            for (int page=0; page<added; page++)
+            {
+                var newGrid = new GameGridInventory();
+                StorageCapacityResizePatch.Postfix(newGrid); // constructed before it has a parent
+                var wrapper = new GraphNodeStorage(); wrapper.children.Add(newGrid); bay.children.Add(wrapper);
+            }
+            StorageCapacityValidatePatch.Postfix(bay);
+            Check(before[1].text.text=="50.00%", "Ordinary validation retains cached ratio");
+            StorageCapacityExpansionPatch.Postfix(bay);
+            string expected=added==1 ? "25.00%" : "16.67%";
+            Check(before.TrueForAll(n=>n.text.text==expected), "Expansion invalidates cached normal and drag ratios without moving contents");
+            bay.children.Add(new GameGridInventory());
+            StorageCapacityRestoreTabsPatch.Postfix(bay);
+            Check(before[1].text.text==(added==1 ? "16.67%" : "12.50%"), "Restoring pages also invalidates existing cache");
+            StorageCapacityOverlay.Remove(bay);
+        }
         var fridge = new GameItemElement { identifier = "fridge", Owned = true };
         var chill = new GameGridInventory { Owner = fridge };
         chill.inventoryShape.width = 5; chill.inventoryShape.height = 2;
