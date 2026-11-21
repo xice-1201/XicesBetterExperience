@@ -8,6 +8,7 @@ namespace XicesBetterExperience
         internal static bool EligibleAppraisal;
         internal static bool CreatingEventSlip;
         internal static bool CreatingInspectionSlip;
+        internal static bool CreatingChemicalFeedbackSlip;
     }
 
     [HarmonyPatch(typeof(ContrabandHelper), "LeaveInspectionSlip", new[] { typeof(string) })]
@@ -38,6 +39,25 @@ namespace XicesBetterExperience
         public static void Postfix()
         {
             AppraisalReceiptState.CreatingEventSlip = false;
+        }
+    }
+
+    // Chemical complaints use a hand-note too, but are created through a
+    // separate native path from event and inspection slips.
+    [HarmonyPatch(typeof(ChemicalFeedbackHelper), "QueueHandnoteFeedback",
+        new[] { typeof(System.Collections.Generic.List<string>), typeof(SoldItem), typeof(int) })]
+    internal static class AutoDiscardChemicalFeedbackSlipAroundCreation
+    {
+        public static void Prefix(out bool __state)
+        {
+            __state = AppraisalReceiptState.CreatingChemicalFeedbackSlip;
+            AppraisalReceiptState.CreatingChemicalFeedbackSlip = ModEntry.IsEnabled &&
+                ExperienceSettings.AutoDiscardAppraisalReceipt;
+        }
+
+        public static void Finalizer(bool __state)
+        {
+            AppraisalReceiptState.CreatingChemicalFeedbackSlip = __state;
         }
     }
 
@@ -78,9 +98,17 @@ namespace XicesBetterExperience
     {
         public static void Postfix(GameItem __0)
         {
+            if (!ModEntry.IsEnabled || !ExperienceSettings.AutoDiscardAppraisalReceipt || __0 == null) return;
+
+            // Security reports include wanted captures, stolen/contraband reports
+            // and wrongful reports. Several arrive from delayed arrest callbacks,
+            // outside the original report method's execution scope.
+            bool securityReceipt = __0.identifier == "sec_slip";
             if ((!AppraisalReceiptState.CreatingReceipt &&
                 !AppraisalReceiptState.CreatingEventSlip &&
-                !AppraisalReceiptState.CreatingInspectionSlip) || __0 == null) return;
+                !AppraisalReceiptState.CreatingInspectionSlip &&
+                !AppraisalReceiptState.CreatingChemicalFeedbackSlip &&
+                !securityReceipt)) return;
 
             GraphNodeStorage trash = EmporiumEntry.Instance == null ? null : EmporiumEntry.Instance.trashcan;
             if (trash == null)

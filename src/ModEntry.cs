@@ -27,10 +27,14 @@ namespace XicesBetterExperience
         {
             if (IsEnabled) return;
             IsEnabled = true;
+            FreeStartScenario.Register();
+            FreeStartDifficulty.Register();
             ModHook.OnGameLoadedLate += AugIdentificationAutomation.Clear;
             ModHook.OnGameLoadedLate += RefreshLoaded;
+            ModHook.OnGameLoadedLate += AutoRenew.Resume;
             ModHook.OnModConfigApplied += OnConfigApplied;
             RefreshLoaded();
+            AutoRenew.Resume();
             NightServiceInformation.RefreshOpen();
         }
 
@@ -38,6 +42,8 @@ namespace XicesBetterExperience
         {
             if (!IsEnabled) return;
             IsEnabled = false;
+            FreeStartScenario.Remove();
+            FreeStartDifficulty.Remove();
             NightServiceInformation.RefreshOpen();
             WindowLayoutMemory.Clear();
             AugIdentificationAutomation.Clear();
@@ -45,6 +51,7 @@ namespace XicesBetterExperience
             CigaretteInspectionAutomation.Restore();
             ModHook.OnGameLoadedLate -= AugIdentificationAutomation.Clear;
             ModHook.OnGameLoadedLate -= RefreshLoaded;
+            ModHook.OnGameLoadedLate -= AutoRenew.Resume;
             ModHook.OnModConfigApplied -= OnConfigApplied;
             StorageNameOverlay.Clear();
             StorageCapacityOverlay.Clear();
@@ -65,6 +72,7 @@ namespace XicesBetterExperience
         {
             if (modId != ModId || !IsEnabled) return;
             WindowLayoutMemory.ConfigApplied();
+            AutoRenew.Resume();
             CigaretteInspectionAutomation.Restore();
             InjectorInspectionAutomation.CheckSession();
             AugIdentificationAutomation.ConfigApplied();

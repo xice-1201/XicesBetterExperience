@@ -58,6 +58,25 @@ public static class StorageCapacityRegression
         StorageCapacityResizePatch.Postfix(chill); UnityEngine.Canvas.Render();
         Check(Nodes(fridge)[1].text.text == "9.38%", "Fridge expansion updates combined capacity");
         StorageCapacityOverlay.Remove(fridge);
+        var hypertech = new GameItemElement { identifier = "hypertech_bay", Owned = true };
+        var hypertechPages = new List<GameGridInventory>();
+        for (int page = 0; page < 2; page++)
+        {
+            var inventory = new GameGridInventory { Owner = hypertech };
+            inventory.inventoryShape.width = 16; inventory.inventoryShape.height = 30;
+            var intake = new GraphNodeStorage(); intake.children.Add(inventory);
+            hypertech.children.Add(intake); hypertechPages.Add(inventory);
+        }
+        var hypertechCargo = new GameItemElement();
+        hypertechCargo.modifiedShape.maxX = 15; hypertechCargo.modifiedShape.maxY = 29;
+        hypertechPages[0].UncheckedAccept(hypertechCargo);
+        StorageCapacityOverlay.Refresh(hypertech);
+        Check(Nodes(hypertech).Count == 4 && Nodes(hypertech)[1].text.text == "50.00%",
+            "Hypertech capacity combines both wrapped 16x30 pages: 480 of 960 cells");
+        hypertechPages[1].UncheckedAccept(new GameItemElement());
+        StorageCapacityAcceptPatch.Postfix(hypertechPages[1]); UnityEngine.Canvas.Render();
+        Check(Nodes(hypertech)[1].text.text == "50.10%", "Hypertech second-page mutations refresh combined capacity");
+        StorageCapacityOverlay.Remove(hypertech);
         var store = new GameItemElement { identifier = "storage_bay", Owned=true };
         var grid = new GameGridInventory { Owner = store };
         store.children.Add(grid);

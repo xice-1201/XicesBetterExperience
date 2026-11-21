@@ -126,7 +126,7 @@ public static class StorageNamingRegression
     {
         Check(ExperienceSettings.StorageNaming && ModConfig.Instance.StorageEntry.Value, "Storage naming defaults on");
         string[] ids = { "makeshift_storage_bay", "storage_bay", "storage_bay_large", "storage_bay_gun",
-            "storage_bay_chem", "machine_bay", "machine_bay_ext", "fridge", "smuggler_bay_mini", "smuggler_bay", "smuggler_bay_mod" };
+            "storage_bay_chem", "machine_bay", "machine_bay_ext", "fridge", "hypertech_bay", "smuggler_bay_mini", "smuggler_bay", "smuggler_bay_mod" };
         foreach (string id in ids)
         {
             var item = Storage(id, "化学原料 <b>甲</b>");
@@ -153,7 +153,7 @@ public static class StorageNamingRegression
             Check(Nodes(item).Count == 0, "Clearing name removes only our overlay");
             Check(item.handler != null && item.widthPixels == 48 && item.Tags.Contains("STORAGE_EXPANSION_TABS_INT"), "Original icon and expansion unchanged");
         }
-        Console.WriteLine("PASS: eight native storage IDs and expansion tags, literal names, bounded overlays, rename/clear, idempotency and drag visibility.");
+        Console.WriteLine("PASS: native storage IDs including hypertech bay and expansion tags, literal names, bounded overlays, rename/clear, idempotency and drag visibility.");
 
         foreach (string id in new[] { "water_tank", "storage_bay_expansion_kit", "storage_bay_unknown", "storage_coordinator" })
         {

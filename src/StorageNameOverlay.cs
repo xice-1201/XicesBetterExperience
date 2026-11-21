@@ -28,6 +28,7 @@ namespace XicesBetterExperience
                 case "machine_bay":
                 case "machine_bay_ext":
                 case "fridge":
+                case "hypertech_bay":
                 case "smuggler_bay_mini":
                 case "smuggler_bay":
                 case "smuggler_bay_mod": return true;
