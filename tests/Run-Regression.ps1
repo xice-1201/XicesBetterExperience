@@ -11,6 +11,7 @@ $arguments = @('/define:REGRESSION_TESTS', '/nologo', '/noconfig', '/nostdlib+',
     ('/reference:' + (Join-Path $frameworkPath 'System.Core.dll')),
     (Join-Path $projectRoot 'src/ModEntry.cs'),
     (Join-Path $projectRoot 'src/ExperienceSettings.cs'),
+    (Join-Path $projectRoot 'src/FreeStartRules.cs'),
     (Join-Path $projectRoot 'src/InjectorInspectionAutomation.cs'),
     (Join-Path $projectRoot 'src/CigaretteInspectionAutomation.cs'),
     (Join-Path $PSScriptRoot 'CigaretteInspectionRegression.cs'),
@@ -100,3 +101,50 @@ $nightArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:
 if ($LASTEXITCODE -ne 0) { throw 'Night service regression compilation failed.' }
 & $nightExe
 if ($LASTEXITCODE -ne 0) { throw 'Night service regression failed.' }
+
+$renewExe = Join-Path $outputPath 'AutoRenewRegression.exe'
+$renewArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $renewExe),
+    ('/reference:' + (Join-Path $frameworkPath 'mscorlib.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.Core.dll')),
+    ('/reference:' + $harmonyPath),
+    (Join-Path $projectRoot 'src/AutoRenew.cs'),
+    (Join-Path $PSScriptRoot 'AutoRenewRegression.cs'))
+& (Join-Path $UnityEditorPath 'Data/NetCoreRuntime/dotnet.exe') (Join-Path $UnityEditorPath 'Data/DotNetSdkRoslyn/csc.dll') @renewArguments
+if ($LASTEXITCODE -ne 0) { throw 'Automatic reordering regression compilation failed.' }
+& $renewExe
+if ($LASTEXITCODE -ne 0) { throw 'Automatic reordering regression failed.' }
+
+$freeStartExe = Join-Path $outputPath 'FreeStartRegression.exe'
+$freeStartArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $freeStartExe),
+    ('/reference:' + (Join-Path $frameworkPath 'mscorlib.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.Core.dll')),
+    ('/reference:' + $harmonyPath),
+    (Join-Path $projectRoot 'src/FreeStartRules.cs'),
+    (Join-Path $projectRoot 'src/FreeStartScenario.cs'),
+    (Join-Path $projectRoot 'src/FreeStartWater.cs'),
+    (Join-Path $projectRoot 'src/FreeStartFence.cs'),
+    (Join-Path $projectRoot 'src/FreeStartExtras.cs'),
+    (Join-Path $projectRoot 'src/FreeStartEquipment.cs'),
+    (Join-Path $projectRoot 'src/FreeStartContacts.cs'),
+    (Join-Path $projectRoot 'src/FreeStartEvents.cs'),
+    (Join-Path $projectRoot 'src/FreeStartSkipIntro.cs'),
+    (Join-Path $PSScriptRoot 'FreeStartRegression.cs'))
+& (Join-Path $UnityEditorPath 'Data/NetCoreRuntime/dotnet.exe') (Join-Path $UnityEditorPath 'Data/DotNetSdkRoslyn/csc.dll') @freeStartArguments
+if ($LASTEXITCODE -ne 0) { throw 'Custom profession regression compilation failed.' }
+& $freeStartExe
+if ($LASTEXITCODE -ne 0) { throw 'Custom profession regression failed.' }
+
+$difficultyExe = Join-Path $outputPath 'FreeStartDifficultyRegression.exe'
+$difficultyArguments = @('/nologo', '/noconfig', '/nostdlib+', '/target:exe', ('/out:' + $difficultyExe),
+    ('/reference:' + (Join-Path $frameworkPath 'mscorlib.dll')),
+    ('/reference:' + (Join-Path $frameworkPath 'System.dll')),
+    ('/reference:' + $harmonyPath),
+    (Join-Path $projectRoot 'src/FreeStartDifficulty.cs'),
+    (Join-Path $projectRoot 'src/FreeStartEconomy.cs'),
+    (Join-Path $PSScriptRoot 'FreeStartDifficultyRegression.cs'))
+& (Join-Path $UnityEditorPath 'Data/NetCoreRuntime/dotnet.exe') (Join-Path $UnityEditorPath 'Data/DotNetSdkRoslyn/csc.dll') @difficultyArguments
+if ($LASTEXITCODE -ne 0) { throw 'Custom difficulty regression compilation failed.' }
+& $difficultyExe
+if ($LASTEXITCODE -ne 0) { throw 'Custom difficulty regression failed.' }

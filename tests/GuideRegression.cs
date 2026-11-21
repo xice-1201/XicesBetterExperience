@@ -22,6 +22,9 @@ public interface IMod { void Init(ModManifest manifest); void OnEnable(); void O
 public static class AugIdentificationAutomation { public static void Clear() { } public static void ConfigApplied() { } }
 public static class WindowLayoutMemory { public static void Clear() { } public static void ConfigApplied() { } }
 public static class NightServiceInformation { public static void RefreshOpen() { } }
+public static class AutoRenew { public static void Resume() { } }
+public static class FreeStartScenario { public static void Register() { } public static void Remove() { } }
+public static class FreeStartDifficulty { public static void Register() { } public static void Remove() { } }
 public class ModManifest { public string ID; }
 public class ModLog { public ModLog(ModManifest manifest) { } public void Log(object message) { } }
 public class ConfigEntry<T> { public T Value; public void Set(T value) { Value = value; } }
@@ -127,6 +130,11 @@ public class StoreEvent
 {
     public string identifier;
     public StoreEvent CreateAndAddSlip(int timer) { return this; }
+}
+public class SoldItem { }
+public static class ChemicalFeedbackHelper
+{
+    public static void QueueHandnoteFeedback(List<string> lines, SoldItem item, int reputationLoss) { }
 }
 public class StoreEventManager
 {
@@ -404,9 +412,56 @@ public static class GuideRegression
         UnityEngine.Application.version = "0.46D";
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
-        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 29 &&
+        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 72 &&
             ModConfig.Instance.Key == "auto_open_appraisal_guide" && ExperienceSettings.AutoOpenAppraisalGuide,
-            "Twenty-one settings plus seven internal layout entries");
+            "Twenty-three settings plus forty-nine internal entries");
+        Check(!ExperienceSettings.FreeStartFood && !ExperienceSettings.FreeStartHousehold && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartFoodKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartHouseholdKey), "Optional starting supplies default off and stay internal");
+        Check(!ExperienceSettings.FreeStartForceSkip && !ExperienceSettings.FreeStartNoSkipSupplies && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartForceSkipKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartNoSkipSuppliesKey), "Skip intro options default off and stay internal");
+        Check(!ExperienceSettings.FreeStartWaterTools && !ExperienceSettings.FreeStartWaterContact && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartWaterToolsKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartWaterContactKey), "Starting water options default off and stay internal");
+        Check(!ExperienceSettings.FreeStartSmugglerStorage && !ExperienceSettings.FreeStartContraband && !ExperienceSettings.FreeStartBlackLamps && !ExperienceSettings.FreeStartExchange && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartSmugglerStorageKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartContrabandKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartBlackLampsKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartExchangeKey), "Fence starting options default off and stay internal");
+        Check(!ExperienceSettings.FreeStartMusic && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartMusicKey), "Starting music defaults off and stays internal");
+        for (int i = 0; i < 5; i++) Check(ExperienceSettings.FreeStartReputation(i) == 0 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartReputationKey(i)), "Starting reputation defaults to zero and stays internal");
+        Check(ExperienceSettings.DisableDisplayCaseTip && ExperienceSettings.SettingsTab("disable_display_case_tip") == "general" && ModConfig.Instance.BooleanKeys.IndexOf("disable_display_case_tip") + 1 == ModConfig.Instance.BooleanKeys.IndexOf("auto_open_appraisal_guide"), "Display timing suppression defaults on before guide setting");
+        Check(ExperienceSettings.FreeStartBailouts == 0 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartBailoutsKey), "Bailout quota defaults zero and stays internal");
+        Check(ExperienceSettings.FreeStartRent == 200 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartRentKey), "Starting rent defaults 200 and stays internal");
+        Check(ExperienceSettings.FreeStartRentGrowth == 5 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartRentGrowthKey), "Rent growth defaults 5 and stays internal");
+        Check(ExperienceSettings.FreeStartRetailMarkup == 15 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartRetailMarkupKey), "Retail markup defaults 15 and stays internal");
+        Check(!ExperienceSettings.FreeStartLandlordGrace && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartLandlordGraceKey), "Landlord grace defaults off and stays internal");
+        ExperienceSettings.SaveFreeStartRentGrowth(101); ExperienceSettings.SaveFreeStartRetailMarkup(-1);
+        Check(ExperienceSettings.FreeStartRentGrowth == 100 && ExperienceSettings.FreeStartRetailMarkup == 0, "Economy settings clamp values");
+        ExperienceSettings.SaveFreeStartRentGrowth(5); ExperienceSettings.SaveFreeStartRetailMarkup(15);
+        Check(ExperienceSettings.FreeStartPowerMultiplier == 1 && ExperienceSettings.FreeStartInsuranceMultiplier == 1 &&
+            ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartPowerMultiplierKey) &&
+            ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartInsuranceMultiplierKey), "Service multipliers default to one and stay internal");
+        ExperienceSettings.SaveFreeStartPowerMultiplier(-1); ExperienceSettings.SaveFreeStartInsuranceMultiplier(11);
+        Check(ExperienceSettings.FreeStartPowerMultiplier == 0 && ExperienceSettings.FreeStartInsuranceMultiplier == 10, "Service multipliers clamp to zero through ten");
+        ExperienceSettings.SaveFreeStartPowerMultiplier(1); ExperienceSettings.SaveFreeStartInsuranceMultiplier(1);
+        Check(ExperienceSettings.FreeStartVendorPermitFee == 1000 && ExperienceSettings.FreeStartAppraisalJoinMultiplier == 1 &&
+            ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartVendorPermitFeeKey) &&
+            ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartAppraisalJoinMultiplierKey), "Permit fee and appraisal joining multiplier defaults and internal scope");
+        ExperienceSettings.SaveFreeStartVendorPermitFee(10001); ExperienceSettings.SaveFreeStartAppraisalJoinMultiplier(-1);
+        Check(ExperienceSettings.FreeStartVendorPermitFee == 10000 && ExperienceSettings.FreeStartAppraisalJoinMultiplier == 0, "Permit and appraisal bounds");
+        ExperienceSettings.SaveFreeStartVendorPermitFee(1000); ExperienceSettings.SaveFreeStartAppraisalJoinMultiplier(1);
+        Check(ExperienceSettings.FreeStartRunnerMarkup == 15 && ExperienceSettings.FreeStartHypertechMarkup == 50 && ExperienceSettings.FreeStartDoctorMarkup == 15 && ExperienceSettings.FreeStartRetiredMarkup == 15, "Supplier markup defaults");
+        Check(ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartRunnerMarkupKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartHypertechMarkupKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartDoctorMarkupKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartRetiredMarkupKey), "Supplier settings remain internal");
+        Check(!ExperienceSettings.FreeStartHydroponics && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartHydroponicsKey), "Equipment option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartRanching && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartRanchingKey), "Equipment option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartAquaculture && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartAquacultureKey), "Equipment option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartChemistry && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartChemistryKey), "Equipment option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartFarmerContact && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartFarmerContactKey), "Contact option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartRancherContact && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartRancherContactKey), "Contact option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartAquafarmerContact && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartAquafarmerContactKey), "Contact option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartChemistContact && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartChemistContactKey), "Contact option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartGunsmithContact && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartGunsmithContactKey), "Contact option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartGunPermit && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartGunPermitKey), "Contact option defaults off and stays internal");
+        Check(!ExperienceSettings.FreeStartStorage && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartStorageKey),
+            "Custom starting storage defaults off and is hidden from mod config pages");
+        Check(ExperienceSettings.FreeStartCash == 600 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartCashKey),
+            "Custom starting cash defaults to 600 and is hidden from mod config pages");
+        Check(ExperienceSettings.AutoRenew && ExperienceSettings.SettingsTab("auto_renew") == "general" &&
+            ModConfig.Instance.BooleanKeys.IndexOf("auto_renew") == ModConfig.Instance.BooleanKeys.IndexOf("auto_open_appraisal_guide") + 1 &&
+            ModConfig.Instance.BooleanKeys.IndexOf("retain_window_layout") == ModConfig.Instance.BooleanKeys.IndexOf("auto_renew") + 1,
+            "Auto renew defaults on between guides and window layout in General");
         Check(ExperienceSettings.NightServiceInformation && ExperienceSettings.SettingsTab("night_service_information") == "general" &&
             ModConfig.Instance.BooleanKeys.IndexOf("night_service_information") == ModConfig.Instance.BooleanKeys.IndexOf("auto_discard_appraisal_receipt") + 1,
             "Night service information defaults on, in General immediately after receipt cleanup");

@@ -1,5 +1,51 @@
 config_tab_general,General
 config_tab_icons,Icons
+free_start_title,As You Please
+free_start_description,The Mentor is delighted with your training results. You are allowed to choose your own path.
+free_start_tag,Custom mode
+free_start_cash_label,Starting cash
+free_start_rent_label,Starting rent
+free_start_storage_label,Starting storage bay
+free_start_music_label,Starting music cassettes
+free_start_reputation_0,Starting lower-level reputation
+free_start_reputation_1,Starting upper-level reputation
+free_start_reputation_2,Starting Security reputation
+free_start_reputation_3,Starting black-market reputation
+free_start_reputation_4,Starting revolutionary reputation
+free_start_smuggler_storage_label,Starting smuggler bay
+free_start_contraband_label,Starting contraband
+free_start_black_lamps_label,Starting black lamps
+free_start_exchange_label,Starting Sawyer exchange access
+free_start_tab_basic,Basic
+free_start_tab_supplies,Supplies
+free_start_tab_contacts,Contacts
+free_start_tab_events,Events
+free_start_bailouts_label,Wild's bailout
+setting_disable_display_case_tip,Disable display case hint
+setting_disable_display_case_tip_tip,Disable the popup explaining when display case items take effect.
+free_start_water_tools_label,Starting water processing tools
+free_start_hydroponics_label,Starting hydroponics equipment
+free_start_ranching_label,Starting rat farming equipment
+free_start_aquaculture_label,Starting aquaculture equipment
+free_start_chemistry_label,Starting chemistry equipment
+free_start_water_contact_label,Starting water trader contact
+free_start_farmer_contact_label,Starting farmer contact
+free_start_rancher_contact_label,Starting rat farmer contact
+free_start_aquafarmer_contact_label,Starting aquafarmer contact
+free_start_chemist_contact_label,Starting chemist contact
+free_start_gunsmith_contact_label,Starting gunsmith contact
+free_start_gun_permit_label,Class I firearm permit
+free_start_food_label,Starting food
+free_start_household_label,Starting household goods
+free_start_force_skip_label,Force skip intro
+free_start_no_skip_supplies_label,Disable intro supplies
+setting_auto_renew,Automatic reordering
+setting_auto_renew_tip,Allow goods to be ordered automatically when a supplier is ready.
+auto_renew_start,Auto
+auto_renew_stop,Stop
+auto_renew_done,Automatically reordered!
+auto_renew_unlocked,Large orders unlocked; automatic reordering stopped.
+auto_renew_blocked,Supplier refused service; automatic reordering stopped.
 setting_power_warning,Power warning
 setting_power_warning_tip,Show a warning on the item icon when the tool or machine has insufficient power to continue operating tonight.
 setting_auto_open_guide,Automatically open and close appraisal guides
@@ -61,3 +107,23 @@ night_service_trash_warning,Valuable items in the trash will be removed!
 night_service_crime_value,Crime value:
 night_service_investigation,Investigation progress:
 night_service_credits, credits
+free_difficulty_title,Free Customization
+free_difficulty_subtitle,The entire station runs according to your plans
+free_start_rent_growth_label,Rent increase
+free_start_retail_markup_label,Retail markup
+free_start_landlord_grace_label,Starting landlord grace
+free_start_power_multiplier_label,Power service cost multiplier
+free_start_insurance_multiplier_label,Insurance service cost multiplier
+free_start_multiplier_unit,×
+free_difficulty_service_low,Lower nightly service fees
+free_difficulty_service_standard,Standard nightly service fees
+free_difficulty_service_high,Higher nightly service fees
+free_start_vendor_permit_fee_label,Vendor permit fee
+free_start_appraisal_join_multiplier_label,Appraisal association joining fee multiplier
+free_start_runner_markup_label,Supply runner markup
+free_start_hypertech_markup_label,Hypertech supplier markup
+free_start_doctor_markup_label,Dr. Jackson supply markup
+free_start_retired_markup_label,Retired supplier markup
+free_difficulty_supplier_low,Lower supplier markup
+free_difficulty_supplier_standard,Standard supplier markup
+free_difficulty_supplier_high,Higher supplier markup
