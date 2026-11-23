@@ -99,11 +99,17 @@ namespace XicesBetterExperience
         }
         private static bool IsSupportedRoot(GameObject root)
         {
-            return root != null && (IsWaterScanner(root) || IsSupported(root.GetComponent<StoreUI>()));
+            return root != null && (IsWaterScanner(root) || IsChemScanner(root) || IsSupported(root.GetComponent<StoreUI>()));
+        }
+        private static bool IsChemScanner(GameObject root)
+        {
+            var scanner = ChemScannerUIManager.Instance;
+            return root != null && scanner != null && scanner.panel == root;
         }
         private static string SavedRootLayout(GameObject root)
         {
-            return IsWaterScanner(root) ? ExperienceSettings.WaterScannerLayout : SavedLayout(root.GetComponent<StoreUI>());
+            return IsWaterScanner(root) ? ExperienceSettings.WaterScannerLayout :
+                IsChemScanner(root) ? ReadInspectionLayout("chem_scanner") : SavedLayout(root.GetComponent<StoreUI>());
         }
         private static void Cancel(GameObject root)
         {
@@ -255,6 +261,8 @@ namespace XicesBetterExperience
                 }
             WaterScannerUIManager scanner = WaterScannerUIManager.Instance;
             if (scanner != null) QueueRootRestore(scanner.panel);
+            var chemScanner = ChemScannerUIManager.Instance;
+            if (chemScanner != null) QueueRootRestore(chemScanner.panel);
             PhoneUIManager phone = PhoneUIManager.Instance;
             if (phone != null && phone.phonePanel != null && phone.phonePanel.activeInHierarchy)
                 QueueRestore(phone.phonePanel.GetComponent<StoreUI>());
@@ -262,15 +270,36 @@ namespace XicesBetterExperience
 
         internal static void CaptureWaterScanner(GameObject root)
         {
-            if (!Enabled || restoring || !IsWaterScanner(root) || !root.activeInHierarchy || pending.ContainsKey(root) ||
+            if (!Enabled || restoring || (!IsWaterScanner(root) && !IsChemScanner(root)) || !root.activeInHierarchy || pending.ContainsKey(root) ||
                 Screen.width <= 0 || Screen.height <= 0) return;
             RectTransform rect = root.transform as RectTransform;
             if (rect == null) return;
             Vector2 point = RectTransformUtility.WorldToScreenPoint(UICamera(rect), rect.position);
-            ExperienceSettings.SaveWaterScannerLayout(new Layout
+            string value = new Layout
             {
                 X = point.x / Screen.width, Y = point.y / Screen.height, Zoom = 1
-            }.Encode());
+            }.Encode();
+            if (IsChemScanner(root)) SaveInspectionLayout("chem_scanner", value);
+            else ExperienceSettings.SaveWaterScannerLayout(value);
+        }
+
+        [HarmonyPatch(typeof(ChemScannerUIManager), "Open", new[] { typeof(GameItem), typeof(GameItem) })]
+        public static class ChemScannerOpenPatch
+        {
+            public static void Postfix(ChemScannerUIManager __instance, GameItem water)
+            {
+                if (__instance != null && water != null) QueueRootRestore(__instance.panel);
+            }
+        }
+        [HarmonyPatch(typeof(ChemScannerUIManager), "Close", new Type[] { })]
+        public static class ChemScannerClosePatch
+        {
+            public static void Prefix(ChemScannerUIManager __instance)
+            {
+                if (__instance == null) return;
+                CaptureWaterScanner(__instance.panel);
+                Cancel(__instance.panel);
+            }
         }
 
         [HarmonyPatch(typeof(WaterScannerUIManager), "Open", new[] { typeof(GameItem), typeof(GameItem) })]
@@ -466,7 +495,7 @@ namespace XicesBetterExperience
             public static void Postfix(UIDragHandler __instance, UnityEngine.EventSystems.PointerEventData eventData)
             {
                 if (__instance == null || eventData == null || eventData.button != UnityEngine.EventSystems.PointerEventData.InputButton.Left) return;
-                if (IsWaterScanner(__instance.gameObject))
+                if (IsWaterScanner(__instance.gameObject) || IsChemScanner(__instance.gameObject))
                 {
                     Cancel(__instance.gameObject);
                     CaptureWaterScanner(__instance.gameObject);

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using HarmonyLib;
 using UnityEngine;
 
@@ -44,6 +45,23 @@ namespace XicesBetterExperience
                 {
                     foreach (var effect in Difficulty.Effects)
                     {
+                        if (effect.key == "reputation_gain" || effect.key == "reputation_loss")
+                        {
+                            int reputationIndex = __result.IndexOf(effect.describe(display.rules));
+                            bool gain = effect.key == "reputation_gain";
+                            decimal multiplier = (gain ? ExperienceSettings.FreeStartReputationGain : ExperienceSettings.FreeStartReputationLoss) / 100m;
+                            if (reputationIndex >= 0) __result[reputationIndex] = FreeStartScenario.Text(gain
+                                ? "free_difficulty_reputation_gain" : "free_difficulty_reputation_loss") + multiplier.ToString("0.##", CultureInfo.InvariantCulture);
+                            continue;
+                        }
+                        if (effect.key == "property")
+                        {
+                            int propertyIndex = __result.IndexOf(effect.describe(display.rules));
+                            int price = display.rules.propertyBasePrice;
+                            if (propertyIndex >= 0) __result[propertyIndex] = FreeStartScenario.Text(price < 12000
+                                ? "free_difficulty_property_low" : price < 24000 ? "free_difficulty_property_standard" : "free_difficulty_property_high");
+                            continue;
+                        }
                         if (effect.key == "supplier_markup")
                         {
                             int supplierIndex = __result.IndexOf(effect.describe(display.rules));

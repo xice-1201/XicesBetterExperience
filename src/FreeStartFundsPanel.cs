@@ -42,7 +42,7 @@ namespace XicesBetterExperience
                 panel.tabs[i] = headers.Last.button;
             }
 
-            RectTransform basic = panel.NewPage(host, 0, 14);
+            RectTransform basic = panel.NewPage(host, 0, 17);
             var builder = new CustomUIBuilder(CustomUIManager.Instance, window, basic);
             var label = NewGameUIElements.NewText(frame, basic, "label", 16, 0, 176, 40,
                 FontLoader.FontRole.Noto_Sans_Normal, 22, NewGameStyle.BULLET_TEXT, TextAlignmentOptions.MidlineLeft, false);
@@ -62,30 +62,36 @@ namespace XicesBetterExperience
                 () => ExperienceSettings.FreeStartRent, ExperienceSettings.SaveFreeStartRent, true);
             panel.AddNumber(frame, basic, builder, "free_start_rent_growth_label", RowHeight * 2, 0, 100,
                 () => ExperienceSettings.FreeStartRentGrowth, ExperienceSettings.SaveFreeStartRentGrowth, false, "%");
-            panel.AddNumber(frame, basic, builder, "free_start_retail_markup_label", RowHeight * 3, 0, 100,
+            panel.AddNumber(frame, basic, builder, "free_start_property_price_label", RowHeight * 3, 5000, 100000,
+                () => ExperienceSettings.FreeStartPropertyPrice, ExperienceSettings.SaveFreeStartPropertyPrice, true);
+            panel.AddNumber(frame, basic, builder, "free_start_property_growth_label", RowHeight * 4, 0, 1000,
+                () => ExperienceSettings.FreeStartPropertyGrowth, ExperienceSettings.SaveFreeStartPropertyGrowth, true);
+            panel.AddNumber(frame, basic, builder, "free_start_property_cap_label", RowHeight * 5, 0, 900000,
+                () => ExperienceSettings.FreeStartPropertyCap, ExperienceSettings.SaveFreeStartPropertyCap, true);
+            panel.AddNumber(frame, basic, builder, "free_start_retail_markup_label", RowHeight * 6, 0, 100,
                 () => ExperienceSettings.FreeStartRetailMarkup, ExperienceSettings.SaveFreeStartRetailMarkup, false, "%");
-            panel.AddNumber(frame, basic, builder, "free_start_power_multiplier_label", RowHeight * 4, 0, 10,
+            panel.AddNumber(frame, basic, builder, "free_start_power_multiplier_label", RowHeight * 7, 0, 10,
                 () => ExperienceSettings.FreeStartPowerMultiplier, ExperienceSettings.SaveFreeStartPowerMultiplier, false,
                 FreeStartScenario.Text("free_start_multiplier_unit"));
-            panel.AddNumber(frame, basic, builder, "free_start_insurance_multiplier_label", RowHeight * 5, 0, 10,
+            panel.AddNumber(frame, basic, builder, "free_start_insurance_multiplier_label", RowHeight * 8, 0, 10,
                 () => ExperienceSettings.FreeStartInsuranceMultiplier, ExperienceSettings.SaveFreeStartInsuranceMultiplier, false,
                 FreeStartScenario.Text("free_start_multiplier_unit"));
-            panel.AddNumber(frame, basic, builder, "free_start_vendor_permit_fee_label", RowHeight * 6, 0, 10000,
+            panel.AddNumber(frame, basic, builder, "free_start_vendor_permit_fee_label", RowHeight * 9, 0, 10000,
                 () => ExperienceSettings.FreeStartVendorPermitFee, ExperienceSettings.SaveFreeStartVendorPermitFee, true);
-            panel.AddNumber(frame, basic, builder, "free_start_appraisal_join_multiplier_label", RowHeight * 7, 0, 10,
+            panel.AddNumber(frame, basic, builder, "free_start_appraisal_join_multiplier_label", RowHeight * 10, 0, 10,
                 () => ExperienceSettings.FreeStartAppraisalJoinMultiplier, ExperienceSettings.SaveFreeStartAppraisalJoinMultiplier, false,
                 FreeStartScenario.Text("free_start_multiplier_unit"));
-            panel.AddNumber(frame, basic, builder, "free_start_runner_markup_label", RowHeight * 8, 0, 1000,
+            panel.AddNumber(frame, basic, builder, "free_start_runner_markup_label", RowHeight * 11, 0, 1000,
                 () => ExperienceSettings.FreeStartRunnerMarkup, ExperienceSettings.SaveFreeStartRunnerMarkup, false, "%");
-            panel.AddNumber(frame, basic, builder, "free_start_hypertech_markup_label", RowHeight * 9, 0, 1000,
+            panel.AddNumber(frame, basic, builder, "free_start_hypertech_markup_label", RowHeight * 12, 0, 1000,
                 () => ExperienceSettings.FreeStartHypertechMarkup, ExperienceSettings.SaveFreeStartHypertechMarkup, false, "%");
-            panel.AddNumber(frame, basic, builder, "free_start_doctor_markup_label", RowHeight * 10, 0, 1000,
+            panel.AddNumber(frame, basic, builder, "free_start_doctor_markup_label", RowHeight * 13, 0, 1000,
                 () => ExperienceSettings.FreeStartDoctorMarkup, ExperienceSettings.SaveFreeStartDoctorMarkup, false, "%");
-            panel.AddNumber(frame, basic, builder, "free_start_retired_markup_label", RowHeight * 11, 0, 1000,
+            panel.AddNumber(frame, basic, builder, "free_start_retired_markup_label", RowHeight * 14, 0, 1000,
                 () => ExperienceSettings.FreeStartRetiredMarkup, ExperienceSettings.SaveFreeStartRetiredMarkup, false, "%");
-            AddOption(frame, basic, builder, "free_start_force_skip_label", RowHeight * 12,
+            AddOption(frame, basic, builder, "free_start_force_skip_label", RowHeight * 15,
                 ExperienceSettings.FreeStartForceSkip, ExperienceSettings.SaveFreeStartForceSkip);
-            AddOption(frame, basic, builder, "free_start_no_skip_supplies_label", RowHeight * 13,
+            AddOption(frame, basic, builder, "free_start_no_skip_supplies_label", RowHeight * 16,
                 ExperienceSettings.FreeStartNoSkipSupplies, ExperienceSettings.SaveFreeStartNoSkipSupplies);
 
             RectTransform supplies = panel.NewPage(host, 1, 12);
@@ -115,32 +121,38 @@ namespace XicesBetterExperience
             AddOption(frame, supplies, builder, "free_start_music_label", RowHeight * 11,
                 ExperienceSettings.FreeStartMusic, ExperienceSettings.SaveFreeStartMusic);
 
-            RectTransform contacts = panel.NewPage(host, 2, 14);
+            RectTransform contacts = panel.NewPage(host, 2, 16);
             builder = new CustomUIBuilder(CustomUIManager.Instance, window, contacts);
             for (int i = 0; i < 5; i++)
                 panel.AddReputation(frame, contacts, builder, i);
-            AddOption(frame, contacts, builder, "free_start_landlord_grace_label", RowHeight * 5,
+            panel.AddNumber(frame, contacts, builder, "free_start_reputation_gain_label", RowHeight * 5, 0, 1000,
+                () => ExperienceSettings.FreeStartReputationGain, ExperienceSettings.SaveFreeStartReputationGain, false, "%");
+            panel.AddNumber(frame, contacts, builder, "free_start_reputation_loss_label", RowHeight * 6, 0, 1000,
+                () => ExperienceSettings.FreeStartReputationLoss, ExperienceSettings.SaveFreeStartReputationLoss, false, "%");
+            AddOption(frame, contacts, builder, "free_start_landlord_grace_label", RowHeight * 7,
                 ExperienceSettings.FreeStartLandlordGrace, ExperienceSettings.SaveFreeStartLandlordGrace);
-            AddOption(frame, contacts, builder, "free_start_exchange_label", RowHeight * 6,
+            AddOption(frame, contacts, builder, "free_start_exchange_label", RowHeight * 8,
                 ExperienceSettings.FreeStartExchange, ExperienceSettings.SaveFreeStartExchange);
-            AddOption(frame, contacts, builder, "free_start_water_contact_label", RowHeight * 7,
+            AddOption(frame, contacts, builder, "free_start_water_contact_label", RowHeight * 9,
                 ExperienceSettings.FreeStartWaterContact, ExperienceSettings.SaveFreeStartWaterContact);
-            AddOption(frame, contacts, builder, "free_start_farmer_contact_label", RowHeight * 8,
+            AddOption(frame, contacts, builder, "free_start_farmer_contact_label", RowHeight * 10,
                 ExperienceSettings.FreeStartFarmerContact, ExperienceSettings.SaveFreeStartFarmerContact);
-            AddOption(frame, contacts, builder, "free_start_rancher_contact_label", RowHeight * 9,
+            AddOption(frame, contacts, builder, "free_start_rancher_contact_label", RowHeight * 11,
                 ExperienceSettings.FreeStartRancherContact, ExperienceSettings.SaveFreeStartRancherContact);
-            AddOption(frame, contacts, builder, "free_start_aquafarmer_contact_label", RowHeight * 10,
+            AddOption(frame, contacts, builder, "free_start_aquafarmer_contact_label", RowHeight * 12,
                 ExperienceSettings.FreeStartAquafarmerContact, ExperienceSettings.SaveFreeStartAquafarmerContact);
-            AddOption(frame, contacts, builder, "free_start_chemist_contact_label", RowHeight * 11,
+            AddOption(frame, contacts, builder, "free_start_chemist_contact_label", RowHeight * 13,
                 ExperienceSettings.FreeStartChemistContact, ExperienceSettings.SaveFreeStartChemistContact);
-            AddOption(frame, contacts, builder, "free_start_gunsmith_contact_label", RowHeight * 12,
+            AddOption(frame, contacts, builder, "free_start_gunsmith_contact_label", RowHeight * 14,
                 ExperienceSettings.FreeStartGunsmithContact, ExperienceSettings.SaveFreeStartGunsmithContact);
-            AddOption(frame, contacts, builder, "free_start_gun_permit_label", RowHeight * 13,
+            AddOption(frame, contacts, builder, "free_start_gun_permit_label", RowHeight * 15,
                 ExperienceSettings.FreeStartGunPermit, ExperienceSettings.SaveFreeStartGunPermit);
-            var events = panel.NewPage(host, 3, 1);
+            var events = panel.NewPage(host, 3, 2);
             builder = new CustomUIBuilder(CustomUIManager.Instance, window, events);
             panel.AddNumber(frame, events, builder, "free_start_bailouts_label", 0, 0, 10,
-                () => ExperienceSettings.FreeStartBailouts, ExperienceSettings.SaveFreeStartBailouts, false);
+                () => ExperienceSettings.FreeStartBailouts, ExperienceSettings.SaveFreeStartBailouts, false, FreeStartScenario.Text("free_start_times_unit"));
+            panel.AddNumber(frame, events, builder, "free_start_lou_demand_label", RowHeight, 0, 10000,
+                () => ExperienceSettings.FreeStartLouDemand, ExperienceSettings.SaveFreeStartLouDemand, true);
             foreach (var text in host.GetComponentsInChildren<TextMeshProUGUI>(true))
             {
                 text.fontSize = 22;

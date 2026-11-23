@@ -127,3 +127,16 @@ free_start_retired_markup_label,Retired supplier markup
 free_difficulty_supplier_low,Lower supplier markup
 free_difficulty_supplier_standard,Standard supplier markup
 free_difficulty_supplier_high,Higher supplier markup
+free_start_property_price_label,Initial property price
+free_start_property_growth_label,Daily property price growth
+free_start_property_cap_label,Property price growth cap
+free_difficulty_property_low,Lower shop purchase price
+free_difficulty_property_standard,Standard shop purchase price
+free_difficulty_property_high,Higher shop purchase price
+
+free_start_reputation_gain_label,Reputation gain multiplier
+free_start_reputation_loss_label,Reputation loss multiplier
+free_difficulty_reputation_gain,Reputation gains ×
+free_difficulty_reputation_loss,Reputation losses ×
+free_start_lou_demand_label,Lou's debt collection
+free_start_times_unit,times

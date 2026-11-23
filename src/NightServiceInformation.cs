@@ -58,7 +58,10 @@ namespace XicesBetterExperience
             {
                 if (service.id == "INSURANCE_SERVICE")
                 {
-                    int rate = NightServiceRules.AlarmRate(alarm == null ? 0 : MachineAlarm.GetAlarmeStopRate(alarm), alarmPowered);
+                    bool protectedNight = StartingPerk.IsAlert() ||
+                        (player.skipIntro && StoreStation.Instance.dayCounter < player.startingDay + 3);
+                    int rate = protectedNight ? 100 : NightServiceRules.AlarmRate(
+                        alarm == null ? 0 : MachineAlarm.GetAlarmeStopRate(alarm), alarmPowered);
                     return "（" + Text("night_service_alarm") + Color(rate + "%", NightServiceRules.AlarmColor(rate)) + "）";
                 }
                 if (service.id == "JANITORIAL_SERVICE")

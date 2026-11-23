@@ -1,4 +1,4 @@
-﻿config_tab_general,通常
+config_tab_general,通常
 config_tab_icons,图标
 free_start_title,随心所欲
 free_start_description,导师对你的训练成果相当满意，你被允许自己决定自己的出路。
@@ -127,3 +127,16 @@ free_start_retired_markup_label,退休商人供应加价
 free_difficulty_supplier_low,供货商加价幅度较低
 free_difficulty_supplier_standard,供货商加价幅度为标准水平
 free_difficulty_supplier_high,供货商加价幅度较高
+free_start_property_price_label,初始房价
+free_start_property_growth_label,房价日均增长
+free_start_property_cap_label,房价增长上限
+free_difficulty_property_low,店铺购置价格较低
+free_difficulty_property_standard,店铺购置价格为标准水平
+free_difficulty_property_high,店铺购置价格较高
+
+free_start_reputation_gain_label,声望获取倍率
+free_start_reputation_loss_label,声望损失倍率
+free_difficulty_reputation_gain,声望获取量×
+free_difficulty_reputation_loss,声望损失量×
+free_start_lou_demand_label,卢的讨债
+free_start_times_unit,次
