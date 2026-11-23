@@ -18,6 +18,9 @@ public class WildNetworkSlot { public Action<string> onClick; public Action<stri
 public class NewGameDifficultyFrame { public UnityEngine.Transform platesHost = new UnityEngine.Transform(); }
 public class DifficultyRules
 {
+    public int propertyBasePrice=12000, propertyPriceIncreasePerDay=50, propertyPriceIncreaseCap=5000;
+    public float reputationGainMultiplier=1f, reputationLossMultiplier=1f;
+    public int louDemandValue = 750;
     public int retailMarkup = 15;
     public float rentIncreaseMultiplier = 1.05f;
     public bool landlordGraceOwnedAtStart = true;
@@ -31,6 +34,9 @@ public class Difficulty
     public class DifficultyEffect { public string key; public Func<DifficultyRules,string> describe; }
     public static List<DifficultyEffect> Effects = new List<DifficultyEffect> {
         new DifficultyEffect { key="service_fees", describe=r=>"native service fees" },
+        new DifficultyEffect { key="reputation_gain", describe=r=>"native reputation gain" },
+        new DifficultyEffect { key="reputation_loss", describe=r=>"native reputation loss" },
+        new DifficultyEffect { key="property", describe=r=>"native property" },
         new DifficultyEffect { key="supplier_markup", describe=r=>"native suppliers" }
     };
     public string id, iconKey;
@@ -38,7 +44,7 @@ public class Difficulty
     public Func<string> title, subtitle;
     public DifficultyRules rules;
     public static Difficulty Normal = new Difficulty { id="normal", rules=new DifficultyRules() };
-    public static List<string> GetEffectLines(Difficulty d) { return new List<string> { d.id, "rent="+d.rules.rentIncreaseMultiplier+";markup="+d.rules.retailMarkup, "native service fees", "permit="+d.rules.vendorPermitFee, "native suppliers" }; }
+    public static List<string> GetEffectLines(Difficulty d) { return new List<string> { d.id, "rent="+d.rules.rentIncreaseMultiplier+";markup="+d.rules.retailMarkup, "native service fees", "permit="+d.rules.vendorPermitFee, "native suppliers", "native property", "native reputation gain", "native reputation loss" }; }
 }
 public static class ModHelper
 {
@@ -85,6 +91,9 @@ namespace XicesBetterExperience
     public static class ModEntry { public const string ModId="test"; public static bool IsEnabled=true; }
     public static class ExperienceSettings
     {
+        public static int FreeStartLouDemand = 750;
+        public static int FreeStartReputationGain=100, FreeStartReputationLoss=100;
+        public static int FreeStartPropertyPrice=12000, FreeStartPropertyGrowth=50, FreeStartPropertyCap=5000;
         public static int FreeStartRentGrowth=5, FreeStartRetailMarkup=15;
         public static int FreeStartPowerMultiplier=1, FreeStartInsuranceMultiplier=1;
         public static int FreeStartVendorPermitFee=1000, FreeStartAppraisalJoinMultiplier=1;
@@ -118,6 +127,10 @@ public static class FreeStartDifficultyRegression
     }
     public static void Main()
     {
+        try { Run(); } catch (Exception e) { Console.WriteLine("FAIL at " + checks + ": " + e.Message + "; inner: " + (e.InnerException == null ? "none" : e.InnerException.Message)); Environment.Exit(1); }
+    }
+    static void Run()
+    {
         FreeStartDifficulty.Register();
         Difficulty custom=ModHelper.Registered;
         Check(custom.id==FreeStartDifficulty.Id && custom.order==0);
@@ -125,7 +138,7 @@ public static class FreeStartDifficultyRegression
         Check(custom.rules!=Difficulty.Normal.rules && custom.rules.retailMarkup==15 && custom.rules.rentIncreaseMultiplier==1.05f);
         object[] description={custom,null};
         Check(!(bool)Hook("Description",description));
-        Check(((List<string>)description[1])[0]=="normal" && ((List<string>)description[1]).Count==5);
+        Check(((List<string>)description[1])[0]=="normal" && ((List<string>)description[1]).Count==8);
         foreach(bool free in new[]{false,true})
         {
             NewGameData.Instance.startScenarioId=free ? FreeStartScenario.Id : "apprentice";
@@ -268,6 +281,70 @@ public static class FreeStartDifficultyRegression
         Check(FreeStartDifficulty.CanSelect(custom.id) && (bool)Hook("ValidateStart"));
         Check((bool)Hook("Description",new object[]{custom,null}));
         Check(Active(custom.rules)==custom.rules);
+        // Property thresholds, real native price inputs, snapshots and legacy defaults.
+        ModEntry.IsEnabled=true;
+        NewGameData.Instance.startScenarioId=FreeStartScenario.Id;
+        NewGameData.Instance.difficultyId=custom.id;
+        PlayerStore.Instance=null;
+        foreach(int price in new[]{5000,11999,12000,23999,24000,100000})
+        {
+            ExperienceSettings.FreeStartPropertyPrice=price;
+            ExperienceSettings.FreeStartPropertyGrowth=1000;
+            ExperienceSettings.FreeStartPropertyCap=900000;
+            object[] propertyDescription={custom,null}; Hook("Description",propertyDescription);
+            string expected=price<12000 ? "free_difficulty_property_low" : price<24000 ? "free_difficulty_property_standard" : "free_difficulty_property_high";
+            Check(((List<string>)propertyDescription[1]).Contains(expected));
+            var rules=Active(custom.rules);
+            Check(rules.propertyBasePrice==price && rules.propertyPriceIncreasePerDay==1000 && rules.propertyPriceIncreaseCap==900000);
+        }
+        PlayerStore.Instance=new PlayerStore { difficultyId=custom.id };
+        EconomyHook("SaveStartingRules","Prefix");
+        ExperienceSettings.FreeStartPropertyPrice=5000; ExperienceSettings.FreeStartPropertyGrowth=0; ExperienceSettings.FreeStartPropertyCap=0;
+        Check(Active(custom.rules).propertyBasePrice==100000 && Active(custom.rules).propertyPriceIncreaseCap==900000);
+        ModHelper.Numbers=new Dictionary<string,int>();
+        var legacy=Active(custom.rules);
+        Check(legacy.propertyBasePrice==12000 && legacy.propertyPriceIncreasePerDay==50 && legacy.propertyPriceIncreaseCap==5000);
+        EconomyHook("SaveStartingRules","Prefix");
+        var zero=Active(custom.rules);
+        Check(zero.propertyBasePrice==5000 && zero.propertyPriceIncreasePerDay==0 && zero.propertyPriceIncreaseCap==0);
+        Check(Difficulty.Normal.rules.propertyBasePrice==12000 && Difficulty.Normal.rules.propertyPriceIncreasePerDay==50);
+        PlayerStore.Instance=null;
+        foreach (int percent in new[] {0, 99, 100, 1000})
+        {
+            ExperienceSettings.FreeStartReputationGain=percent;
+            ExperienceSettings.FreeStartReputationLoss=percent;
+            var previewRep=FreeStartEconomy.Preview(custom.rules);
+            Check(Math.Abs(previewRep.reputationGainMultiplier-percent/100f)<0.00001);
+            Check(Math.Abs(previewRep.reputationLossMultiplier-percent/100f)<0.00001);
+            object[] repDescription={custom,null}; Hook("Description",repDescription);
+            string value=(percent/100m).ToString("0.##",System.Globalization.CultureInfo.InvariantCulture);
+            Check(((List<string>)repDescription[1]).Contains("free_difficulty_reputation_gain"+value));
+            Check(((List<string>)repDescription[1]).Contains("free_difficulty_reputation_loss"+value));
+        }
+        ExperienceSettings.FreeStartReputationGain=99; ExperienceSettings.FreeStartReputationLoss=250;
+        PlayerStore.Instance=new PlayerStore { difficultyId=custom.id };
+        EconomyHook("SaveStartingRules","Prefix");
+        ExperienceSettings.FreeStartReputationGain=0; ExperienceSettings.FreeStartReputationLoss=0;
+        var savedRep=Active(custom.rules);
+        Check(Math.Abs(savedRep.reputationGainMultiplier-0.99f)<0.00001 && savedRep.reputationLossMultiplier==2.5f);
+        ModHelper.Numbers=new Dictionary<string,int>();
+        Check(Active(custom.rules).reputationGainMultiplier==1f && Active(custom.rules).reputationLossMultiplier==1f);
+        Check(Difficulty.Normal.rules.reputationGainMultiplier==1f && Difficulty.Normal.rules.reputationLossMultiplier==1f);
+        // Lou demands use the per-save rule, including zero and range boundaries.
+        foreach (int amount in new[] { 0, 750, 10000, -1, 10001 })
+        {
+            ExperienceSettings.FreeStartLouDemand=amount;
+            int expected=Math.Max(0,Math.Min(10000,amount));
+            Check(FreeStartEconomy.Preview(custom.rules).louDemandValue==expected);
+            EconomyHook("SaveStartingRules","Prefix");
+            ExperienceSettings.FreeStartLouDemand=123;
+            Check(Active(custom.rules).louDemandValue==expected);
+        }
+        ModHelper.Numbers=new Dictionary<string,int>();
+        Check(Active(custom.rules).louDemandValue==750);
+        Check(Difficulty.Normal.rules.louDemandValue==750);
+        PlayerStore.Instance.difficultyId="normal";
+        Check(Active(Difficulty.Normal.rules)==Difficulty.Normal.rules);
         FreeStartDifficulty.Remove(); Check(ModHelper.Registered==null);
         Console.WriteLine("PASS: custom difficulty rules, full normal description, profession restrictions, cached-window transitions and disabled gates ("+checks+" checks).");
     }

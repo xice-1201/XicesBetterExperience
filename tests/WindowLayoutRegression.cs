@@ -76,6 +76,7 @@ public class UIDragHandler
 }
 public class NegociationUIManager {public static NegociationUIManager Instance;public UnityEngine.GameObject uiObject;}
 public class WaterScannerUIManager {public static WaterScannerUIManager Instance;public UnityEngine.GameObject panel;}
+public class ChemScannerUIManager {public static ChemScannerUIManager Instance;public UnityEngine.GameObject panel;}
 public class InspectionUIManager {public static InspectionUIManager Instance;public UnityEngine.GameObject panel;}
 public class MultiPageUIManager {public static MultiPageUIManager Instance;public UnityEngine.GameObject panel;}
 public class PaperUIManager
@@ -292,6 +293,35 @@ public static class WindowLayoutRegression
     }
     static void OpenScanner()
     {WindowLayoutMemory.WaterScannerOpenPatch.Postfix(WaterScannerUIManager.Instance,new GameItem());}
+    static void ChemScannerTests()
+    {
+        WindowLayoutMemory.Clear();
+        string water=ExperienceSettings.WaterScannerLayout;
+        var root=new UnityEngine.GameObject();root.transform.parent=new UnityEngine.GameObject().transform;
+        ChemScannerUIManager.Instance=new ChemScannerUIManager {panel=root};
+        root.transform.position=new UnityEngine.Vector3(800,450,0);
+        WindowLayoutMemory.DragEndPatch.Postfix(new UIDragHandler {Root=root},new UnityEngine.EventSystems.PointerEventData());
+        string saved=ExperienceSettings.InspectionLayouts;
+        Check(saved.Contains("chem_scanner=")&&water==ExperienceSettings.WaterScannerLayout,"Chem scanner has independent persisted position");
+        root.transform.position=new UnityEngine.Vector3(100,100,0);
+        WindowLayoutMemory.ChemScannerOpenPatch.Postfix(ChemScannerUIManager.Instance,new GameItem());Flush();
+        Check(Math.Abs(root.transform.position.x-800)<.01f,"Chem scanner restores after opening without StoreUI");
+        root.transform.position=new UnityEngine.Vector3(900,450,0);
+        WindowLayoutMemory.ChemScannerClosePatch.Prefix(ChemScannerUIManager.Instance);
+        Check(saved!=ExperienceSettings.InspectionLayouts,"Chem scanner close captures position");
+        saved=ExperienceSettings.InspectionLayouts;
+        WindowLayoutMemory.ChemScannerOpenPatch.Postfix(ChemScannerUIManager.Instance,new GameItem());
+        root.transform.position=new UnityEngine.Vector3(100,100,0);
+        WindowLayoutMemory.ChemScannerClosePatch.Prefix(ChemScannerUIManager.Instance);root.activeInHierarchy=false;Flush();
+        Check(saved==ExperienceSettings.InspectionLayouts,"Chem scanner quick close preserves record");
+        root.activeInHierarchy=true;ExperienceSettings.RetainWindowLayout=false;
+        WindowLayoutMemory.ChemScannerOpenPatch.Postfix(ChemScannerUIManager.Instance,new GameItem());Flush();
+        Check(Math.Abs(root.transform.position.x-100)<.01f,"Chem scanner honors disabled setting");
+        ExperienceSettings.RetainWindowLayout=true;WindowLayoutMemory.ConfigApplied();Flush();
+        Check(Math.Abs(root.transform.position.x-900)<.01f,"Chem scanner re-enable restores visible panel");
+        WindowLayoutMemory.Clear();
+        Console.WriteLine("PASS: chem scanner independent layout, drag, close/reopen, quick close and configuration gates.");
+    }
     static void WaterScannerTests()
     {
         WindowLayoutMemory.Clear();
@@ -508,6 +538,7 @@ public static class WindowLayoutRegression
         VendingMachineTests();
         try { WaterScannerTests(); }
         catch (Exception error) { Console.WriteLine("FAIL water scanner: " + error.Message); Environment.Exit(1); }
+        ChemScannerTests();
         Console.WriteLine("PASS: phone global layout, independent records, concurrent restoration, quick close, disabled gates, exact panel identity; tablet global layout, scene/config reload, new saves, zoom continuity, docking order, quick close, gates, locale, bounds and zero idle writes.");
     }
 }

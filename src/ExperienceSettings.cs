@@ -4,6 +4,14 @@ namespace XicesBetterExperience
 {
     public static class ExperienceSettings
     {
+        private static ConfigEntry<string> freeStartReputationGain;
+        internal const string FreeStartReputationGainKey = "internal_free_start_reputation_gain_v1";
+        internal static int FreeStartReputationGain { get { return FreeStartRules.ParseRange(freeStartReputationGain == null ? "100" : freeStartReputationGain.Value, 100, 0, 1000); } }
+        internal static void SaveFreeStartReputationGain(int value) { if (freeStartReputationGain != null) freeStartReputationGain.Set(Math.Max(0, Math.Min(1000, value)).ToString(System.Globalization.CultureInfo.InvariantCulture)); }
+        private static ConfigEntry<string> freeStartReputationLoss;
+        internal const string FreeStartReputationLossKey = "internal_free_start_reputation_loss_v1";
+        internal static int FreeStartReputationLoss { get { return FreeStartRules.ParseRange(freeStartReputationLoss == null ? "100" : freeStartReputationLoss.Value, 100, 0, 1000); } }
+        internal static void SaveFreeStartReputationLoss(int value) { if (freeStartReputationLoss != null) freeStartReputationLoss.Set(Math.Max(0, Math.Min(1000, value)).ToString(System.Globalization.CultureInfo.InvariantCulture)); }
         private static ConfigEntry<string> freeStartSmugglerStorage;
         internal const string FreeStartSmugglerStorageKey = "internal_free_start_smuggler_storage_v1";
         internal static bool FreeStartSmugglerStorage { get { return freeStartSmugglerStorage != null && freeStartSmugglerStorage.Value == "true"; } }
@@ -37,9 +45,25 @@ namespace XicesBetterExperience
         }
         private static ConfigEntry<bool> disableDisplayCaseTip;
         public static bool DisableDisplayCaseTip { get { return disableDisplayCaseTip == null || disableDisplayCaseTip.Value; } }
+        private static ConfigEntry<string> freeStartLouDemand;
+        internal const string FreeStartLouDemandKey = "internal_free_start_lou_demand_v1";
+        internal static int FreeStartLouDemand { get { return FreeStartRules.ParseRange(freeStartLouDemand == null ? "750" : freeStartLouDemand.Value, 750, 0, 10000); } }
+        internal static void SaveFreeStartLouDemand(int value) { if (freeStartLouDemand != null) freeStartLouDemand.Set(Math.Max(0, Math.Min(10000, value)).ToString(System.Globalization.CultureInfo.InvariantCulture)); }
         private static ConfigEntry<string> freeStartBailouts;
         internal const string FreeStartBailoutsKey = "internal_free_start_bailouts_v1";
         private static ConfigEntry<string> freeStartRent;
+        private static ConfigEntry<string> freeStartPropertyPrice;
+        internal const string FreeStartPropertyPriceKey = "internal_free_start_property_price_v1";
+        internal static int FreeStartPropertyPrice { get { return FreeStartRules.ParseRange(freeStartPropertyPrice == null ? "12000" : freeStartPropertyPrice.Value, 12000, 5000, 100000); } }
+        internal static void SaveFreeStartPropertyPrice(int value) { if (freeStartPropertyPrice != null) freeStartPropertyPrice.Set(Math.Max(5000, Math.Min(100000, value)).ToString(System.Globalization.CultureInfo.InvariantCulture)); }
+        private static ConfigEntry<string> freeStartPropertyGrowth;
+        internal const string FreeStartPropertyGrowthKey = "internal_free_start_property_growth_v1";
+        internal static int FreeStartPropertyGrowth { get { return FreeStartRules.ParseRange(freeStartPropertyGrowth == null ? "50" : freeStartPropertyGrowth.Value, 50, 0, 1000); } }
+        internal static void SaveFreeStartPropertyGrowth(int value) { if (freeStartPropertyGrowth != null) freeStartPropertyGrowth.Set(Math.Max(0, Math.Min(1000, value)).ToString(System.Globalization.CultureInfo.InvariantCulture)); }
+        private static ConfigEntry<string> freeStartPropertyCap;
+        internal const string FreeStartPropertyCapKey = "internal_free_start_property_cap_v1";
+        internal static int FreeStartPropertyCap { get { return FreeStartRules.ParseRange(freeStartPropertyCap == null ? "5000" : freeStartPropertyCap.Value, 5000, 0, 900000); } }
+        internal static void SaveFreeStartPropertyCap(int value) { if (freeStartPropertyCap != null) freeStartPropertyCap.Set(Math.Max(0, Math.Min(900000, value)).ToString(System.Globalization.CultureInfo.InvariantCulture)); }
         private static ConfigEntry<string> freeStartRentGrowth, freeStartRetailMarkup, freeStartLandlordGrace;
         private static ConfigEntry<string> freeStartPowerMultiplier, freeStartInsuranceMultiplier;
         private static ConfigEntry<string> freeStartVendorPermitFee, freeStartAppraisalJoinMultiplier;
@@ -187,7 +211,7 @@ namespace XicesBetterExperience
         public static bool RetainWindowLayout { get { return retainWindowLayout == null || retainWindowLayout.Value; } }
         internal static string TabletLayout { get { return tabletLayout == null ? "" : tabletLayout.Value; } }
         internal static void SaveTabletLayout(string value) { if (tabletLayout != null) tabletLayout.Set(value); }
-        internal static bool IsInternalSetting(string key) { return key == FreeStartRunnerMarkupKey || key == FreeStartHypertechMarkupKey || key == FreeStartDoctorMarkupKey || key == FreeStartRetiredMarkupKey || key == FreeStartVendorPermitFeeKey || key == FreeStartAppraisalJoinMultiplierKey || key == FreeStartPowerMultiplierKey || key == FreeStartInsuranceMultiplierKey || key == FreeStartRentGrowthKey || key == FreeStartRetailMarkupKey || key == FreeStartLandlordGraceKey || key == FreeStartFarmerContactKey || key == FreeStartRancherContactKey || key == FreeStartAquafarmerContactKey || key == FreeStartChemistContactKey || key == FreeStartGunsmithContactKey || key == FreeStartGunPermitKey || key == FreeStartHydroponicsKey || key == FreeStartRanchingKey || key == FreeStartAquacultureKey || key == FreeStartChemistryKey || key == FreeStartRentKey || key == FreeStartBailoutsKey || key == FreeStartMusicKey || key == FreeStartReputationKey(0) || key == FreeStartReputationKey(1) || key == FreeStartReputationKey(2) || key == FreeStartReputationKey(3) || key == FreeStartReputationKey(4) || key == FreeStartExchangeKey || key == FreeStartBlackLampsKey || key == FreeStartContrabandKey || key == FreeStartSmugglerStorageKey || key == FreeStartWaterToolsKey || key == FreeStartWaterContactKey || key == FreeStartForceSkipKey || key == FreeStartNoSkipSuppliesKey || key == FreeStartFoodKey || key == FreeStartHouseholdKey || key == FreeStartStorageKey || key == FreeStartCashKey || key == InspectionLayoutsKey || key == TabletLayoutKey || key == PhoneLayoutKey || key == ArchiveLayoutKey || key == TrashLayoutKey || key == WaterScannerLayoutKey || key == VendingFountainLayoutKey || key == VendingMachineLayoutKey; }
+        internal static bool IsInternalSetting(string key) { return key == FreeStartLouDemandKey || key == FreeStartReputationLossKey || key == FreeStartReputationGainKey || key == FreeStartPropertyPriceKey || key == FreeStartPropertyGrowthKey || key == FreeStartPropertyCapKey || key == FreeStartRunnerMarkupKey || key == FreeStartHypertechMarkupKey || key == FreeStartDoctorMarkupKey || key == FreeStartRetiredMarkupKey || key == FreeStartVendorPermitFeeKey || key == FreeStartAppraisalJoinMultiplierKey || key == FreeStartPowerMultiplierKey || key == FreeStartInsuranceMultiplierKey || key == FreeStartRentGrowthKey || key == FreeStartRetailMarkupKey || key == FreeStartLandlordGraceKey || key == FreeStartFarmerContactKey || key == FreeStartRancherContactKey || key == FreeStartAquafarmerContactKey || key == FreeStartChemistContactKey || key == FreeStartGunsmithContactKey || key == FreeStartGunPermitKey || key == FreeStartHydroponicsKey || key == FreeStartRanchingKey || key == FreeStartAquacultureKey || key == FreeStartChemistryKey || key == FreeStartRentKey || key == FreeStartBailoutsKey || key == FreeStartMusicKey || key == FreeStartReputationKey(0) || key == FreeStartReputationKey(1) || key == FreeStartReputationKey(2) || key == FreeStartReputationKey(3) || key == FreeStartReputationKey(4) || key == FreeStartExchangeKey || key == FreeStartBlackLampsKey || key == FreeStartContrabandKey || key == FreeStartSmugglerStorageKey || key == FreeStartWaterToolsKey || key == FreeStartWaterContactKey || key == FreeStartForceSkipKey || key == FreeStartNoSkipSuppliesKey || key == FreeStartFoodKey || key == FreeStartHouseholdKey || key == FreeStartStorageKey || key == FreeStartCashKey || key == InspectionLayoutsKey || key == TabletLayoutKey || key == PhoneLayoutKey || key == ArchiveLayoutKey || key == TrashLayoutKey || key == WaterScannerLayoutKey || key == VendingFountainLayoutKey || key == VendingMachineLayoutKey; }
         private static ConfigEntry<bool> storageNaming;
         private static ConfigEntry<bool> storageCapacity;
         public static bool StorageCapacity { get { return storageCapacity == null || storageCapacity.Value; } }
@@ -378,6 +402,7 @@ namespace XicesBetterExperience
                 string key = FreeStartReputationKey(i);
                 freeStartReputation[i] = ModConfig.For(ModEntry.ModId).Define(key, "0", "Internal", () => key);
             }
+            freeStartLouDemand = ModConfig.For(ModEntry.ModId).Define(FreeStartLouDemandKey, "750", "Internal", () => FreeStartLouDemandKey);
             freeStartBailouts = ModConfig.For(ModEntry.ModId).Define(FreeStartBailoutsKey, "0", "Internal", () => FreeStartBailoutsKey);
             freeStartHydroponics = ModConfig.For(ModEntry.ModId).Define(FreeStartHydroponicsKey, "false", "Internal", () => FreeStartHydroponicsKey);
             freeStartRanching = ModConfig.For(ModEntry.ModId).Define(FreeStartRanchingKey, "false", "Internal", () => FreeStartRanchingKey);
@@ -390,6 +415,11 @@ namespace XicesBetterExperience
             freeStartGunsmithContact = ModConfig.For(ModEntry.ModId).Define(FreeStartGunsmithContactKey, "false", "Internal", () => FreeStartGunsmithContactKey);
             freeStartGunPermit = ModConfig.For(ModEntry.ModId).Define(FreeStartGunPermitKey, "false", "Internal", () => FreeStartGunPermitKey);
             freeStartRent = ModConfig.For(ModEntry.ModId).Define(FreeStartRentKey, "200", "Internal", () => FreeStartRentKey);
+            freeStartPropertyPrice = ModConfig.For(ModEntry.ModId).Define(FreeStartPropertyPriceKey, "12000", "Internal", () => FreeStartPropertyPriceKey);
+            freeStartPropertyGrowth = ModConfig.For(ModEntry.ModId).Define(FreeStartPropertyGrowthKey, "50", "Internal", () => FreeStartPropertyGrowthKey);
+            freeStartReputationGain = ModConfig.For(ModEntry.ModId).Define(FreeStartReputationGainKey, "100", "Internal", () => FreeStartReputationGainKey);
+            freeStartReputationLoss = ModConfig.For(ModEntry.ModId).Define(FreeStartReputationLossKey, "100", "Internal", () => FreeStartReputationLossKey);
+            freeStartPropertyCap = ModConfig.For(ModEntry.ModId).Define(FreeStartPropertyCapKey, "5000", "Internal", () => FreeStartPropertyCapKey);
             freeStartRentGrowth = ModConfig.For(ModEntry.ModId).Define(FreeStartRentGrowthKey, "5", "Internal", () => FreeStartRentGrowthKey);
             freeStartPowerMultiplier = ModConfig.For(ModEntry.ModId).Define(FreeStartPowerMultiplierKey, "1", "Internal", () => FreeStartPowerMultiplierKey);
             freeStartVendorPermitFee = ModConfig.For(ModEntry.ModId).Define(FreeStartVendorPermitFeeKey, "1000", "Internal", () => FreeStartVendorPermitFeeKey);

@@ -64,7 +64,7 @@ public class SecData {public List<string> crimeTypes=new List<string>(); public 
 public static class NetworkUpgrade {public static int Tier=3; public static int GetWildFixerTier() {return Tier;} }
 public class StoreReputation {public string factionId; public double amount; public List<Perk> perks=new List<Perk>(); public double GetReputationExact() {return amount;} public static bool Distrusted; public static bool IsPerkUnlocked(string p) {return p=="BM_DISTRUSTED"&&Distrusted;} }
 public class Perk {public string perkId; public int perkThreshold; public bool isAlwaysActive;}
-public static class StartingPerk {public static bool IsIntimidating() {return false;} public static bool IsBlabbermouth() {return false;} public static bool IsSycophant() {return false;} }
+public static class StartingPerk {public static bool Alert; public static bool IsAlert() {return Alert;} public static bool IsIntimidating() {return false;} public static bool IsBlabbermouth() {return false;} public static bool IsSycophant() {return false;} }
 public static class Difficulty {public static Rule Rules=new Rule(); public class Rule {public float reputationGainMultiplier=1,reputationLossMultiplier=1;} }
 public class StoreStation {public static StoreStation Instance=new StoreStation(); public int dayCounter=10;}
 
@@ -100,6 +100,23 @@ public static class NightServiceRegression
         Check(NightServiceRules.InvestigationColor(100,100)==NightServiceRules.Red && NightServiceRules.InvestigationColor(100,99)==NightServiceRules.Orange && NightServiceRules.InvestigationColor(99,99)==NightServiceRules.Green,"Three investigation colors");
 
         var p=PlayerStore.Instance;
+        p.startingDay=1;p.skipIntro=true;
+        for(int day=1;day<=3;day++)
+        {
+            StoreStation.Instance.dayCounter=day;
+            Expect("INSURANCE_SERVICE","100%",NightServiceRules.Green);
+        }
+        StoreStation.Instance.dayCounter=4;
+        Expect("INSURANCE_SERVICE","0%",NightServiceRules.Red);
+        p.startingDay=10;StoreStation.Instance.dayCounter=12;
+        Expect("INSURANCE_SERVICE","100%",NightServiceRules.Green);
+        StoreStation.Instance.dayCounter=13;
+        Expect("INSURANCE_SERVICE","0%",NightServiceRules.Red);
+        p.skipIntro=false;p.startingDay=1;StoreStation.Instance.dayCounter=1;
+        Expect("INSURANCE_SERVICE","0%",NightServiceRules.Red);
+        StartingPerk.Alert=true;
+        Expect("INSURANCE_SERVICE","100%",NightServiceRules.Green);
+        StartingPerk.Alert=false;StoreStation.Instance.dayCounter=10;
         Expect("INSURANCE_SERVICE","0%",NightServiceRules.Red);
         var alarm=new GameItem("security_alarm"); p.owned.Add(alarm);
         Expect("INSURANCE_SERVICE","0%",NightServiceRules.Red);
@@ -107,6 +124,7 @@ public static class NightServiceRegression
         Expect("INSURANCE_SERVICE","60%",NightServiceRules.Orange);
         foreach(int rate in new[]{-20,0,99,100,120}) {alarm.rate=rate; Expect("INSURANCE_SERVICE",Math.Max(0,Math.Min(100,rate))+"%",NightServiceRules.AlarmColor(rate));}
         battery.energy=3; Expect("INSURANCE_SERVICE","0%",NightServiceRules.Red);
+        StartingPerk.Alert=true;Expect("INSURANCE_SERVICE","100%",NightServiceRules.Green);StartingPerk.Alert=false;
         battery.converter=true; alarm.rate=60; Expect("INSURANCE_SERVICE","60%",NightServiceRules.Orange);
         StoreService.converter.isUsing=false; Expect("INSURANCE_SERVICE","0%",NightServiceRules.Red); StoreService.converter.isUsing=true;
         CurrentConverterHelper.Blackout=true; Expect("INSURANCE_SERVICE","0%",NightServiceRules.Red); CurrentConverterHelper.Blackout=false;

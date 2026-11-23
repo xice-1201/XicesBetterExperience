@@ -412,9 +412,9 @@ public static class GuideRegression
         UnityEngine.Application.version = "0.46D";
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
         Entry.Init(new ModManifest { ID = ModEntry.ModId });
-        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 72 &&
+        Check(ModConfig.RequestedId == ModEntry.ModId && ModConfig.Instance.Definitions == 78 &&
             ModConfig.Instance.Key == "auto_open_appraisal_guide" && ExperienceSettings.AutoOpenAppraisalGuide,
-            "Twenty-three settings plus forty-nine internal entries");
+            "Twenty-three settings plus fifty-five internal entries");
         Check(!ExperienceSettings.FreeStartFood && !ExperienceSettings.FreeStartHousehold && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartFoodKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartHouseholdKey), "Optional starting supplies default off and stay internal");
         Check(!ExperienceSettings.FreeStartForceSkip && !ExperienceSettings.FreeStartNoSkipSupplies && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartForceSkipKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartNoSkipSuppliesKey), "Skip intro options default off and stay internal");
         Check(!ExperienceSettings.FreeStartWaterTools && !ExperienceSettings.FreeStartWaterContact && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartWaterToolsKey) && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartWaterContactKey), "Starting water options default off and stay internal");
@@ -422,6 +422,10 @@ public static class GuideRegression
         Check(!ExperienceSettings.FreeStartMusic && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartMusicKey), "Starting music defaults off and stays internal");
         for (int i = 0; i < 5; i++) Check(ExperienceSettings.FreeStartReputation(i) == 0 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartReputationKey(i)), "Starting reputation defaults to zero and stays internal");
         Check(ExperienceSettings.DisableDisplayCaseTip && ExperienceSettings.SettingsTab("disable_display_case_tip") == "general" && ModConfig.Instance.BooleanKeys.IndexOf("disable_display_case_tip") + 1 == ModConfig.Instance.BooleanKeys.IndexOf("auto_open_appraisal_guide"), "Display timing suppression defaults on before guide setting");
+        Check(ExperienceSettings.FreeStartLouDemand == 750 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartLouDemandKey), "Lou demand defaults to 750 and stays internal");
+        ExperienceSettings.SaveFreeStartLouDemand(-1); Check(ExperienceSettings.FreeStartLouDemand == 0, "Lou demand lower bound");
+        ExperienceSettings.SaveFreeStartLouDemand(10001); Check(ExperienceSettings.FreeStartLouDemand == 10000, "Lou demand upper bound");
+        ExperienceSettings.SaveFreeStartLouDemand(750);
         Check(ExperienceSettings.FreeStartBailouts == 0 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartBailoutsKey), "Bailout quota defaults zero and stays internal");
         Check(ExperienceSettings.FreeStartRent == 200 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartRentKey), "Starting rent defaults 200 and stays internal");
         Check(ExperienceSettings.FreeStartRentGrowth == 5 && ExperienceSettings.IsInternalSetting(ExperienceSettings.FreeStartRentGrowthKey), "Rent growth defaults 5 and stays internal");
